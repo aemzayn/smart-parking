@@ -1,0 +1,14 @@
+{
+  "name": "smart-parking",
+  "description": "Smart parking vizualisation application using A\\* algorithm",
+  "version": "1.0.0",
+  "keywords": [
+    "smart parking",
+    "A* algorithm"
+  ],
+  "author": {
+    "name": "Ahmad Muslih Zain",
+    "email": "ahmad.muslih22@gmail.com"
+  },
+  "license": "MIT"
+}
