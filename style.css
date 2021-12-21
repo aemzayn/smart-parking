@@ -7,6 +7,7 @@ body {
 
 :root {
   --bg-color: #fff7e0;
+  --speed: 1;
 }
 
 #app {
@@ -94,7 +95,7 @@ main {
 }
 
 .parking-lot > div.exit::after {
-  content: "EXIT";
+  content: 'EXIT';
   position: absolute;
   letter-spacing: 2px;
   color: lightcoral;
