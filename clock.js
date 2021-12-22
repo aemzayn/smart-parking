@@ -1,16 +1,41 @@
+const clockEl = document.querySelector('#clock')
+const speedText = document.getElementById('speed')
+
+const startBtn = document.getElementById('start-pause')
+const resetBtn = document.getElementById('reset')
+const speedBtns = document.querySelectorAll('#time button')
+
+let running = false
+let speed = 1000
+let hour = 0
+let minute = 0
+
+export function getSpeed() {
+  return speed
+}
+
+export function pause() {
+  running = false
+}
+
+export function reset() {
+  running = false
+  startBtn.innerText = 'Start'
+  speed = 1000
+  hour = 0
+  minute = 0
+  let time = `${hour < 10 ? `0${hour}` : hour}:${
+    minute < 10 ? `0${minute}` : minute
+  }`
+  clockEl.innerText = time
+}
+
+export function start() {
+  running = !running
+  startBtn.innerText = !running ? 'Start' : 'Pause'
+}
+
 export default function setClock() {
-  let running = false
-  let speed = 1000
-  let hour = 0
-  let minute = 0
-
-  const clockEl = document.querySelector('#clock')
-  const speedText = document.getElementById('speed')
-
-  const startBtn = document.getElementById('start-pause')
-  const resetBtn = document.getElementById('reset')
-  const speedBtns = document.querySelectorAll('#time button')
-
   function changeTime() {
     if (running) {
       let time = `${hour < 10 ? `0${hour}` : hour}:${
@@ -30,23 +55,9 @@ export default function setClock() {
   let timerInterval = setInterval(changeTime, [speed])
 
   /* Event listeners */
+  startBtn.addEventListener('click', start)
 
-  startBtn.addEventListener('click', function () {
-    running = !running
-    this.innerText = !running ? 'Start' : 'Pause'
-  })
-
-  resetBtn.addEventListener('click', function () {
-    running = false
-    startBtn.innerText = 'Start'
-    speed = 1000
-    hour = 0
-    minute = 0
-    let time = `${hour < 10 ? `0${hour}` : hour}:${
-      minute < 10 ? `0${minute}` : minute
-    }`
-    clockEl.innerText = time
-  })
+  resetBtn.addEventListener('click', reset)
 
   speedBtns.forEach((button) =>
     button.addEventListener('click', function () {

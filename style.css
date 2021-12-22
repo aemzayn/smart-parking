@@ -110,6 +110,14 @@ main {
   background-color: red;
 }
 
+.parking-lot > div.explored {
+  background-color: lightgreen;
+}
+
+.parking-lot > div.path {
+  background-color: darkgreen;
+}
+
 .parking-lot > div img {
   width: 100%;
 }
