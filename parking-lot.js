@@ -1,6 +1,5 @@
 import PriorityQueue from './priority-queue.js'
-import sleep from './sleep.js'
-import { reset, pause, getSpeed } from './clock.js'
+import { reset, pause, sleep } from './clock.js'
 
 const TYPES = {
   OTHER_CARS: 'X',
@@ -117,8 +116,8 @@ export default class ParkingLot {
     })
 
     this.resetBtn.addEventListener('click', () => {
-      getSpeed()
-      this.childEl.forEach((el) => el.classList.remove('path', 'explored'))
+      // this.childEl.forEach((el) => el.classList.remove('path', 'explored'))
+      location.reload()
     })
   }
 
@@ -165,7 +164,7 @@ export default class ParkingLot {
     return this.board[3][0] === 'T'
   }
 
-  generatePath() {
+  async generatePath() {
     const queue = new PriorityQueue() // Frontier
     const parentForCell = {} // For keeping track parent-child relationship
     const costFromStart = {}
@@ -189,10 +188,10 @@ export default class ParkingLot {
       if (currentKey === this.targetKey) break
 
       const neighbors = [
-        { row: row - 1, col },
-        { row, col: col + 1 },
-        { row: row + 1, col },
-        { row, col: col - 1 },
+        { row: row - 1, col }, // top
+        { row, col: col + 1 }, // right
+        { row: row + 1, col }, // below
+        { row, col: col - 1 }, // left
       ]
 
       for (let i = 0; i < neighbors.length; ++i) {
@@ -231,34 +230,40 @@ export default class ParkingLot {
           costToTarget[key] = Fcost
 
           queue.enqueue(neighbors[i], Fcost)
-
           this.getElement(nRow, nCol).classList.add('explored')
+          await sleep(0.5)
         }
       }
-      sleep(5)
+      await sleep(0.25)
     }
     pause()
 
     const path = []
     let currentKey = `${tRow}x${tCol}`
     let current = this.cells[tRow][tCol]
-    console.log(parentForCell)
 
-    while (current && current.key !== this.startKey) {
+    while (
+      current &&
+      current.key !== this.startKey &&
+      parentForCell[currentKey] !== undefined
+    ) {
+      console.log(current)
       path.push(current)
       const { key, cell } = parentForCell[currentKey]
       currentKey = key
       current = cell
     }
 
-    console.dir(path)
+    // console.log(path)
+    // console.log(Object.keys(costFromStart))
+    // console.log(costToTarget)
 
     path.forEach((cell) => {
       cell.el.classList.add('path')
     })
 
-    const nodeExplored = Object.keys(parentForCell).length
-    this.nodeInfoEl.innerText = `Nodes explored: ${nodeExplored}`
+    const exploredNodes = Object.keys(parentForCell).length
+    this.nodeInfoEl.innerText = `Nodes explored: ${exploredNodes}`
   }
 
   getElement(row, col) {

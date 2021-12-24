@@ -3,6 +3,21 @@ class QueueElement {
     this.element = element
     this.priority = priority
   }
+
+  getNeighbors() {
+    let { row, col } = this.element
+    ;(row = Number(row)), (col = Number(col))
+    return [
+      { row: row - 1, col }, // top
+      { row, col: col + 1 }, // right
+      { row: row + 1, col }, // bottom
+      { row, col: col - 1 }, // left
+    ]
+  }
+
+  manhattan() {
+    return Math.pow(row - 3, 2) + Math.pow(col - 0, 2)
+  }
 }
 
 class PriorityQueue {
@@ -12,7 +27,7 @@ class PriorityQueue {
 
   /**
    * Add element to the queue
-   * @param {QueueElement} element
+   * @param {QueueElement} element Object with row and col
    * @param {int} priority
    */
   enqueue(element, priority) {
@@ -33,6 +48,7 @@ class PriorityQueue {
   }
 
   /**
+   * Returns element from the queue
    * @returns {QueueElement}
    */
   dequeue() {

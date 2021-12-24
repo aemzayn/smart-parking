@@ -15,9 +15,9 @@
         <h1>DEMO</h1>
         <div id="time" class="time">
           <div>
-            <span>Zaman</span>
-            <p id="clock" class="clock">00:00</p>
-            <div>
+            <span>Time</span>
+            <span id="clock" class="clock">00:00</span>
+            <div class="grid">
               <button id="start-pause" class="start-pause">Start</button>
               <button id="reset" class="reset">Reset</button>
             </div>
@@ -25,13 +25,13 @@
 
           <div>
             <span>Speed: <span id="speed">1s</span></span>
-            <div>
+            <div class="grid">
               <button id="speedup" class="speedup">Speed up</button>
               <button id="speeddown" class="speeddown">Slow down</button>
             </div>
           </div>
         </div>
-        <div class="input">
+        <!-- <div class="input">
           <label for="time">Exit time</label>
           <input name="time" type="time" />
           <div>
@@ -43,8 +43,20 @@
             />
             <label for="checkbox">Add car by clicking on canvas</label>
           </div>
-          <button>Enter car</button>
-          <button id="remove">Remove car</button>
+          <div class="grid">
+            <button>Enter car</button>
+            <button id="remove">Remove car</button>
+          </div>
+        </div> -->
+        <div>
+          <p>Sizes</p>
+          <div class="grid">
+            <button data-width="4" class="selected">4x4</button>
+            <button data-width="5">5x5</button>
+            <button data-width="6">6x6</button>
+            <button data-width="7">7x7</button>
+            <button data-width="8">8x8</button>
+          </div>
         </div>
         <div>
           <p id="node-info"></p>

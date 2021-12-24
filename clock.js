@@ -11,7 +11,13 @@ let hour = 0
 let minute = 0
 
 export function getSpeed() {
-  return speed
+  return speed / 1000
+}
+
+export function sleep(secs) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, secs * speed)
+  })
 }
 
 export function pause() {
