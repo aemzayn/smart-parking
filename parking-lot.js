@@ -42,6 +42,7 @@ export default class ParkingLot {
     this.width = 4
     this.system = SYS.traditional
 
+    /* ---- Default cells ---- */
     this.board = [
       ['', '', '', 'T'],
       ['', '', '', 'X'],
@@ -78,28 +79,7 @@ export default class ParkingLot {
 
     /* ---- Place the cars nodes ---- */
     // TODO: change into randomize function
-    this.board.forEach((row, x) => {
-      row.forEach((col, y) => {
-        let el = park.getElement(x, y)
-        let node = new Node(col || 'O', x, y, el)
-        this.cells[x][y] = node
-
-        // set cost
-        if (col === 'X' || col === 'T') {
-          this.cost[x][y] = Number(2)
-        } else {
-          this.cost[x][y] = 1
-        }
-
-        // add car
-        if (CARS.includes(col)) {
-          let car = this.createCar(x, y)
-          if (car) {
-            el.appendChild(car)
-          }
-        }
-      })
-    })
+    this.placeCars()
 
     /* ---- Event listener ---- */
 
@@ -135,6 +115,9 @@ export default class ParkingLot {
       })
     )
 
+    // Put cars in random place
+    this.randomizeBtn.addEventListener('click', () => this.randomize())
+
     // Solve the maze
     this.startBtn.addEventListener('click', () => {
       this.generatePath()
@@ -147,6 +130,32 @@ export default class ParkingLot {
     this.board[row][col] = ''
     space.children[0]?.remove()
     this.cells[row][col].type = TYPES.OPEN_SPACE
+  }
+
+  defaultBoard() {
+    this.board = [
+      ['', '', '', 'T'],
+      ['', '', '', 'X'],
+      ['', '', '', ''],
+      ['', '', '', ''],
+    ]
+
+    this.cost = [
+      [1, 1, 1, 1],
+      [1, 1, 1, 1],
+      [1, 1, 1, 1],
+      [1, 1, 1, 1],
+    ]
+
+    /**
+     * @type {Node[][]}
+     */
+    this.cells = [
+      ['', '', '', ''],
+      ['', '', '', ''],
+      ['', '', '', ''],
+      ['', '', '', ''],
+    ]
   }
 
   createCar(row, col) {
@@ -284,5 +293,86 @@ export default class ParkingLot {
 
   getElement(row, col) {
     return document.querySelector(`[data-row="${row}"][data-col="${col}"]`)
+  }
+
+  randomize() {
+    const numOfCars = this.width - 1 // 3
+    const carKeys = []
+    while (carKeys.length < numOfCars) {
+      let row = Math.floor(Math.random() * (this.width - 0))
+      let col = Math.floor(Math.random() * (this.width - 0))
+      let key = `${row}x${col}`
+      if (key === `${this.width - 1}x0`) continue // continue if car keys is in exit
+      if (carKeys.includes(key)) continue // if there's same key continue
+      carKeys.push(key)
+    }
+
+    // relocate the cars
+    this.clearBoard()
+
+    carKeys.forEach((c, i) => {
+      let [row, col] = c.split('x')
+      let id = i === 1 ? 'T' : 'X'
+      this.board[row][col] = id
+    })
+
+    this.placeCars()
+  }
+
+  /**
+   * Append cars to the UI and create node
+   */
+  placeCars() {
+    this.board.forEach((row, x) => {
+      row.forEach((col, y) => {
+        let el = this.getElement(x, y)
+        let node = new Node(col || 'O', x, y, el)
+        this.cells[x][y] = node
+
+        // set cost
+        if (col === 'X' || col === 'T') {
+          this.cost[x][y] = Number(2)
+        } else {
+          this.cost[x][y] = 1
+        }
+
+        // add car
+        if (CARS.includes(col)) {
+          let car = this.createCar(x, y)
+          if (car) {
+            el.appendChild(car)
+          }
+        }
+      })
+    })
+  }
+
+  clearBoard() {
+    this.board = [
+      ['', '', '', ''],
+      ['', '', '', ''],
+      ['', '', '', ''],
+      ['', '', '', ''],
+    ]
+    this.cells = [
+      ['', '', '', ''],
+      ['', '', '', ''],
+      ['', '', '', ''],
+      ['', '', '', ''],
+    ]
+    this.cost = [
+      [1, 1, 1, 1],
+      [1, 1, 1, 1],
+      [1, 1, 1, 1],
+      [1, 1, 1, 1],
+    ]
+    this.isTargetPlaced = false
+    this.childEl.forEach((el) => {
+      if (el.children.length > 0) {
+        for (const child of el.children) {
+          child.remove()
+        }
+      }
+    })
   }
 }

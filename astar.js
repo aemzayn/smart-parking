@@ -47,7 +47,6 @@ export default class Astar {
     const [sRow, sCol] = this.startKey.split('x')
     const [tRow, tCol] = this.targetKey.split('x')
     const startPos = { row: sRow, col: sCol }
-    console.log(startPos)
 
     costFromStart[this.startKey] = 0
 
@@ -76,7 +75,7 @@ export default class Astar {
 
         const key = `${nRow}x${nCol}`
 
-        console.log(key, this.cost[nRow][nCol])
+        // console.log(key, this.cost[nRow][nCol])
 
         // n = neighbor
         /**
