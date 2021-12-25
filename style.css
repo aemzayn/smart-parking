@@ -1,5 +1,9 @@
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
@@ -12,10 +16,23 @@ body {
 :root {
   --bg-color: #fff7e0;
   --speed: 1;
-  --button-hover: #f3c892;
-  --cells: 4;
-  --cell-width: 20vh;
+  --button: #fbd38d;
+  --button-hover: #f6ad55;
 }
+
+/* Global styles */
+
+p {
+  margin: 0;
+  padding: 0;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+}
+
+/* main app */
 
 #app {
   display: flex;
@@ -23,58 +40,46 @@ body {
   height: 100vh;
 }
 
+/* Aside */
+
 .controller {
   padding: 2rem;
   width: 20vw;
-  min-width: 200px;
+  min-width: 250px;
   max-width: 400px;
   padding-top: 1rem;
   background-color: var(--bg-color);
   border-right: 4px solid black;
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 2px;
+.controller section {
+  padding: 0.5rem 0;
+}
+
+.controller section div {
+  margin-top: 0.2rem;
 }
 
 .controller button {
   padding: 0.5rem 1.25rem;
-  border: 1px solid black;
-  border-radius: 2px;
-  border-bottom: 4px solid gray;
-  border-right: 4px solid gray;
+  border: none;
+  border-radius: 4px;
   cursor: pointer;
+  background-color: var(--button);
+  transition: background 150ms ease-in-out;
 }
 
 button:hover {
   background-color: var(--button-hover);
 }
 
-.time {
-  display: flex;
-  padding-bottom: 1rem;
-  flex-direction: column;
-  gap: 1rem;
+.controller .grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
 }
 
-.time > div > div {
-  padding-top: 5px;
-}
-
-.clock {
-  margin: 0;
-}
-
-.input {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  align-items: flex-start;
-  /* padding: 0.5rem; */
-}
-
+/* Parking lot */
 main {
   display: flex;
   margin: 0.6rem;
@@ -85,19 +90,23 @@ main {
 }
 
 .parking-lot {
+  --width: 20vh;
+  --cells: 4;
   height: min-content;
   border: 4px solid black;
   overflow: hidden;
   border-radius: 5px;
   display: grid;
-  grid-template-columns: repeat(var(--cells), 20vh);
-  grid-template-rows: repeat(var(--cells), 20vh);
+  grid-template-columns: repeat(var(--cells), var(--width));
+  grid-template-rows: repeat(var(--cells), var(--width));
 }
 
 .parking-lot > div {
   position: relative;
   background-color: var(--bg-color);
   border: 1px solid black;
+  transition: background 150ms ease-in-out;
+  cursor: pointer;
 }
 
 .parking-lot > div.clicked {
@@ -114,6 +123,10 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.parking-lot > div:hover {
+  background-color: var(--button);
 }
 
 .parking-lot > div.occupied {
