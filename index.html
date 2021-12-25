@@ -19,20 +19,22 @@
           <span id="clock" class="clock">00:00</span>
           <div class="grid">
             <button id="start-pause" class="start-pause">Start</button>
-            <button id="reset" class="reset">Reset</button>
+            <button id="reset" class="reset" onclick="location.reload()">
+              Reset
+            </button>
           </div>
         </section>
 
         <section>
-          <p>Speed: <span id="speed">1</span></p>
+          <p>Speed: <span id="speed">1x</span></p>
           <div class="grid">
-            <button id="speed" data-speed="1">Normal</button>
-            <button id="speed" data-speed="0.5">Faster</button>
+            <button class="speed" data-speed="1">Normal</button>
+            <button class="speed" data-speed="0.5">Faster</button>
           </div>
         </section>
 
-        <section>
-          <p>System: <span id="system">Traditional</span></p>
+        <section id="system">
+          <p>System: <span class="system-info">Traditional</span></p>
           <div class="grid">
             <button id="system-btn" data-sys="traditional">Traditional</button>
             <button id="system-btn" data-sys="puzzle">Puzzle</button>
@@ -68,7 +70,7 @@
           <p>Controller</p>
           <div class="grid">
             <button id="randomize">Randomize</button>
-            <button id="solve">Place</button>
+            <button id="place">Place</button>
           </div>
         </section>
 

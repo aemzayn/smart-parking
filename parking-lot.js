@@ -26,6 +26,10 @@ class Node {
 }
 
 const CARS = ['T', 'X']
+const SYS = {
+  traditional: 'traditional',
+  puzzle: 'puzzle',
+}
 
 export default class ParkingLot {
   constructor() {
@@ -35,6 +39,8 @@ export default class ParkingLot {
     this.targetKey = '3x0'
     this.startPos = { row: -1, col: -1 }
     this.nodeInfoEl = document.getElementById('node-info')
+    this.width = 4
+    this.system = SYS.traditional
 
     this.board = [
       ['', '', '', 'T'],
@@ -65,9 +71,13 @@ export default class ParkingLot {
     this.childEl = Array.from(this.root.children)
     this.startBtn = document.getElementById('start-pause')
     this.checkbox = document.getElementById('checkbox')
-    this.resetBtn = document.getElementById('reset')
+    this.randomizeBtn = document.getElementById('randomize')
+    this.placeCarsBtn = document.getElementById('place')
+    this.systemBtns = document.querySelectorAll('#system button')
+    this.systemInfo = document.querySelector('#system span')
 
-    /* ---- Event listener ---- */
+    /* ---- Place the cars nodes ---- */
+    // TODO: change into randomize function
     this.board.forEach((row, x) => {
       row.forEach((col, y) => {
         let el = park.getElement(x, y)
@@ -91,6 +101,9 @@ export default class ParkingLot {
       })
     })
 
+    /* ---- Event listener ---- */
+
+    // Manually append cars
     this.childEl.forEach(function (lot) {
       lot.addEventListener('click', function () {
         if (parent.checkbox.checked) {
@@ -111,13 +124,20 @@ export default class ParkingLot {
       })
     })
 
+    // Change the system type
+    this.systemBtns.forEach((btn) =>
+      btn.addEventListener('click', function () {
+        const systemType = this.dataset.sys
+        park.system = SYS[systemType] ?? SYS.traditional
+        park.systemInfo.innerText =
+          park.system.charAt(0).toUpperCase() +
+          park.system.slice(1, park.system.length)
+      })
+    )
+
+    // Solve the maze
     this.startBtn.addEventListener('click', () => {
       this.generatePath()
-    })
-
-    this.resetBtn.addEventListener('click', () => {
-      // this.childEl.forEach((el) => el.classList.remove('path', 'explored'))
-      location.reload()
     })
   }
 
@@ -253,10 +273,6 @@ export default class ParkingLot {
       currentKey = key
       current = cell
     }
-
-    // console.log(path)
-    // console.log(Object.keys(costFromStart))
-    // console.log(costToTarget)
 
     path.forEach((cell) => {
       cell.el.classList.add('path')

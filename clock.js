@@ -3,7 +3,7 @@ const speedText = document.getElementById('speed')
 
 const startBtn = document.getElementById('start-pause')
 const resetBtn = document.getElementById('reset')
-const speedBtns = document.querySelectorAll('#time button')
+const speedBtns = document.querySelectorAll('button.speed')
 
 let running = false
 let speed = 1000
@@ -67,27 +67,10 @@ export default function setClock() {
 
   speedBtns.forEach((button) =>
     button.addEventListener('click', function () {
-      const type = this.id
-
-      switch (type) {
-        case 'speeddown':
-          if (speed < 2000) {
-            clearInterval(timerInterval)
-            speed += 100
-            timerInterval = setInterval(changeTime, [speed])
-          }
-          break
-        case 'speedup':
-          if (speed > 500) {
-            clearInterval(timerInterval)
-            speed -= 100
-            timerInterval = setInterval(changeTime, [speed])
-          }
-          break
-        default:
-          break
-      }
-      speedText.innerText = speed / 1000 + 's'
+      clearInterval(timerInterval)
+      speed = Number(this.dataset.speed) * 1000
+      timerInterval = setInterval(changeTime, [speed])
+      speedText.innerText = (speed === 1000 ? 1 : 2) + 'x'
     })
   )
 }
