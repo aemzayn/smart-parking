@@ -280,7 +280,8 @@ export default class ParkingLot {
     carKeys.forEach((key, i) => {
       const [row, col] = key.split('x')
       const id = i === 0 ? 'T' : 'X'
-      this.board = this.modify2DArray(this.board, row, col, id)
+      const newBoard = this.modify2DArray(this.board, row, col, id)
+      this.board = newBoard
     })
 
     this.placeCars()
@@ -317,14 +318,15 @@ export default class ParkingLot {
    * @param {any} newVal The new value
    */
   modify2DArray(arr, row, col, newVal) {
-    return arr.map((rows, x) =>
+    const newArr = arr.map((rows, x) =>
       rows.map((val, y) => {
-        if (x === row && y === col) {
+        if (x === +row && y === +col) {
           return newVal
         }
         return val
       })
     )
+    return newArr
   }
 
   async generatePath() {
