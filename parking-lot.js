@@ -146,7 +146,7 @@ export default class ParkingLot {
 
   createCar(row, col) {
     ;(row = Number(row)), (col = Number(col))
-    if (row === 3 && col === 0) {
+    if (row === this.width - 1 && col === 0) {
       alert('Cannot place car on exit.')
       return
     }
@@ -253,6 +253,8 @@ export default class ParkingLot {
         park.root.appendChild(newEl)
       }
     }
+
+    park.childEl = Array.from(park.root.children)
 
     // update cost and node size
     park.emptyArrays()
