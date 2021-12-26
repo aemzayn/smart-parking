@@ -10,8 +10,8 @@ const TYPES = {
 class Node {
   constructor(type, row, col, el) {
     this.type = type
-    this.x = row
-    this.y = col
+    this.row = row
+    this.col = col
     this.key = `${row}x${col}`
     this.el = el
   }
@@ -105,7 +105,11 @@ export default class ParkingLot {
 
     // Solve the maze
     this.startBtn.addEventListener('click', () => {
-      this.generatePath()
+      if (this.isPuzzleSystem) {
+        this.solvePuzzle()
+      } else {
+        this.solveTraditional()
+      }
     })
 
     // change size of the parking lot
@@ -145,7 +149,10 @@ export default class ParkingLot {
   }
 
   createCar(row, col) {
-    ;(row = Number(row)), (col = Number(col))
+    // change string into number
+    row = +row
+    col = +col
+
     if (row === this.width - 1 && col === 0) {
       alert('Cannot place car on exit.')
       return
@@ -343,7 +350,11 @@ export default class ParkingLot {
     return newArr
   }
 
-  async generatePath() {
+  async solvePuzzle() {
+    console.log('solving...')
+  }
+
+  async solveTraditional() {
     const queue = new PriorityQueue() // Frontier
     const parentForCell = {} // For keeping track parent-child relationship
     const costFromStart = {}
@@ -352,7 +363,7 @@ export default class ParkingLot {
     const [startRow, startCol] = this.startKey.split('x')
 
     parentForCell[this.startKey] = {
-      key: this.startKey,
+      parentKey: this.startKey,
       cell: this.cells[startRow][startCol],
     }
     costFromStart[this.startKey] = 0
@@ -395,7 +406,7 @@ export default class ParkingLot {
 
         if (!(key in costFromStart) || cost < costFromStart[key]) {
           parentForCell[key] = {
-            key: currentKey,
+            parentKey: currentKey,
             cell: current,
           }
 
@@ -421,14 +432,10 @@ export default class ParkingLot {
     let currentKey = `${tRow}x${tCol}`
     let current = this.cells[tRow][tCol]
 
-    while (
-      current &&
-      current.key !== this.startKey &&
-      parentForCell[currentKey] !== undefined
-    ) {
+    while (current.key !== this.startKey && !!parentForCell[currentKey]) {
       path.push(current)
-      const { key, cell } = parentForCell[currentKey]
-      currentKey = key
+      const { parentKey, cell } = parentForCell[currentKey]
+      currentKey = parentKey
       current = cell
     }
 
