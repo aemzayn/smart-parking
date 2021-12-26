@@ -133,29 +133,61 @@ export default class ParkingLot {
     )
   }
 
-  reInitEventListener() {}
-
-  emptyArrays() {
-    let arr = []
-    for (let i = 0; i < this.width; i++) {
-      let row = []
-      for (let j = 0; j < this.width; j++) {
-        row.push('')
-      }
-      arr.push(row)
+  createCar(row, col) {
+    ;(row = Number(row)), (col = Number(col))
+    if (row === 3 && col === 0) {
+      alert('Cannot place car on exit.')
+      return
     }
 
-    this.board = arr.map((a) => a)
-    this.cells = arr.map((rows, row) =>
-      rows.map((_, col) => {
-        const el = this.getElement(row, col)
-        const node = new Node(TYPES.OPEN_SPACE, row, col, el)
+    let el = document.createElement('img')
+    if (!this.isTargetPlaced) {
+      el.src = './images/red-car.png'
+      this.board[row][col] = 'T'
+      this.isTargetPlaced = true
+      this.startKey = `${row}x${col}`
+      this.startPos = { row, col }
+      this.cells[row][col].type = TYPES.TARGET_CAR
+    } else {
+      this.board[row][col] = 'X'
+      el.src = './images/blue-car.png'
+      this.cells[row][col].type = TYPES.OTHER_CARS
+    }
+    return el
+  }
 
-        return node
+  removeCar(space, row, col) {
+    let car = this.board[row][col]
+    if (car === 'T') this.isTargetPlaced = false
+    this.board[row][col] = ''
+    space.children[0]?.remove()
+    this.cells[row][col].type = TYPES.OPEN_SPACE
+  }
+
+  /**
+   * Append cars to the UI and create node
+   */
+  placeCars() {
+    this.board.forEach((row, x) => {
+      row.forEach((col, y) => {
+        const el = this.getElement(x, y)
+        const node = new Node(col || 'O', x, y, el)
+        this.cells[x][y] = node
+
+        // set cost
+        if (col === 'X' || col === 'T') {
+          this.cost[x][y] = Number(2)
+        }
+
+        // add car
+        if (CARS.includes(col)) {
+          const car = this.createCar(x, y)
+          if (car) {
+            el.appendChild(car)
+          }
+        }
       })
-    )
-
-    this.cost = arr.map((a) => a.map(() => 1))
+    })
   }
 
   changeSizeEventListener(el, park) {
@@ -188,80 +220,22 @@ export default class ParkingLot {
     park.sizeInfo.innerText = `${width}x${width}`
   }
 
-  removeCar(space, row, col) {
-    let car = this.board[row][col]
-    if (car === 'T') this.isTargetPlaced = false
-    this.board[row][col] = ''
-    space.children[0]?.remove()
-    this.cells[row][col].type = TYPES.OPEN_SPACE
-  }
-
-  defaultBoard() {
-    this.board = [
-      ['', '', '', 'T'],
-      ['', '', '', 'X'],
-      ['', '', '', ''],
-      ['', '', '', ''],
-    ]
-
-    this.cost = [
-      [1, 1, 1, 1],
-      [1, 1, 1, 1],
-      [1, 1, 1, 1],
-      [1, 1, 1, 1],
-    ]
-
-    /**
-     * @type {Node[][]}
-     */
-    this.cells = [
-      ['', '', '', ''],
-      ['', '', '', ''],
-      ['', '', '', ''],
-      ['', '', '', ''],
-    ]
-  }
-
-  createCar(row, col) {
-    ;(row = Number(row)), (col = Number(col))
-    if (row === 3 && col === 0) {
-      alert('Cannot place car on exit.')
-      return
-    }
-
-    let el = document.createElement('img')
-    if (!this.isTargetPlaced) {
-      el.src = './images/red-car.png'
-      this.board[row][col] = 'T'
-      this.isTargetPlaced = true
-      this.startKey = `${row}x${col}`
-      this.startPos = { row, col }
-      this.cells[row][col].type = TYPES.TARGET_CAR
-    } else {
-      this.board[row][col] = 'X'
-      el.src = './images/blue-car.png'
-      this.cells[row][col].type = TYPES.OTHER_CARS
-    }
-    return el
-  }
-
-  isSpaceAvailabe(row, col) {
-    return !this.board[row][col]
-  }
-
-  /**
-   * Return TRUE if the board is in a solved state.
-   * @returns {boolean}
-   */
-  isSolved() {
-    return this.board[3][0] === 'T'
-  }
-
   getElement(row, col) {
     return document.querySelector(`[data-row="${row}"][data-col="${col}"]`)
   }
 
   randomize() {
+    // empty the boards
+    this.emptyArrays()
+    this.isTargetPlaced = false
+    this.childEl.forEach((el) => {
+      if (el.children.length > 0) {
+        for (const child of el.children) {
+          child.remove()
+        }
+      }
+    })
+
     const numOfCars = this.width - 1
     const carKeys = []
     while (carKeys.length < numOfCars) {
@@ -273,9 +247,6 @@ export default class ParkingLot {
       carKeys.push(key)
     }
 
-    // empty the boards
-    this.clearBoard()
-
     carKeys.forEach((key, i) => {
       const [row, col] = key.split('x')
       const id = i === 0 ? 'T' : 'X'
@@ -285,43 +256,45 @@ export default class ParkingLot {
     this.placeCars()
   }
 
-  /**
-   * Append cars to the UI and create node
-   */
-  placeCars() {
-    this.board.forEach((row, x) => {
-      row.forEach((col, y) => {
-        const el = this.getElement(x, y)
-        const node = new Node(col || 'O', x, y, el)
-        this.cells[x][y] = node
+  emptyArrays() {
+    let arr = []
+    for (let i = 0; i < this.width; i++) {
+      let row = []
+      for (let j = 0; j < this.width; j++) {
+        row.push('')
+      }
+      arr.push(row)
+    }
 
-        // set cost
-        if (col === 'X' || col === 'T') {
-          this.cost[x][y] = Number(2)
-        }
+    this.board = arr.map((a) => a)
+    this.cells = arr.map((rows, row) =>
+      rows.map((_, col) => {
+        const el = this.getElement(row, col)
+        const node = new Node(TYPES.OPEN_SPACE, row, col, el)
 
-        // add car
-        if (CARS.includes(col)) {
-          const car = this.createCar(x, y)
-          if (car) {
-            el.appendChild(car)
-          }
-        }
+        return node
       })
-    })
+    )
+
+    this.cost = arr.map((a) => a.map(() => 1))
   }
 
-  clearBoard() {
-    this.emptyArrays()
-    this.isTargetPlaced = false
-    this.childEl.forEach((el) => {
-      if (el.children.length > 0) {
-        for (const child of el.children) {
-          child.remove()
+  /**
+   * Replace the value in the array
+   * @param {any[][]} arr
+   * @param {int} row
+   * @param {int} col
+   * @param {any} newVal The new value
+   */
+  replace(arr, row, col, newVal) {
+    return arr.map((rows, x) =>
+      rows.map((val, y) => {
+        if (x === row && y === col) {
+          return newVal
         }
-        console.dir(el)
-      }
-    })
+        return val
+      })
+    )
   }
 
   async generatePath() {
