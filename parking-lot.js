@@ -14,6 +14,7 @@ class Node {
     this.col = col
     this.key = `${row}x${col}`
     this.el = el
+    this.exitTime = Math.floor(Math.random() * 24)
   }
 
   /**
@@ -26,10 +27,6 @@ class Node {
 }
 
 const CARS = ['T', 'X']
-const SYS = {
-  traditional: 'traditional',
-  puzzle: 'puzzle',
-}
 
 export default class ParkingLot {
   constructor() {
@@ -41,6 +38,7 @@ export default class ParkingLot {
     this.nodeInfoEl = document.getElementById('node-info')
     this.width = 4
     this.isPuzzleSystem = false
+    this.carExitTimeInfoEl = document.querySelector('.car-info')
 
     /* ---- Default cells ---- */
     this.board = [
@@ -131,9 +129,9 @@ export default class ParkingLot {
   }
 
   clickToAddCarEventListener(el) {
+    const { row, col } = el.dataset
     if (this.checkbox.checked) {
       // this.classList.toggle("clicked");
-      const { row, col } = el.dataset
 
       if (el.children && el.children.length > 0) {
         // if there's already a car remove it
@@ -145,6 +143,9 @@ export default class ParkingLot {
         if (car) el.appendChild(car)
         this.cost = this.modify2DArray(this.cost, row, col, 2)
       }
+    } else {
+      const carNode = this.cells[row][col]
+      this.carExitTimeInfoEl.innerText = carNode.exitTime
     }
   }
 
@@ -353,6 +354,8 @@ export default class ParkingLot {
   async solvePuzzle() {
     console.log('solving...')
   }
+
+  async placeTraditional() {}
 
   async solveTraditional() {
     const queue = new PriorityQueue() // Frontier

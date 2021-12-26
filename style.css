@@ -171,3 +171,11 @@ main {
 .sizes-button button.selected {
   background-color: #f3c892;
 }
+
+/* Car info */
+.car-info {
+}
+
+.car-info.show {
+  display: block;
+}
