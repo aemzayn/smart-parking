@@ -40,7 +40,7 @@ export default class ParkingLot {
     this.startPos = { row: -1, col: -1 }
     this.nodeInfoEl = document.getElementById('node-info')
     this.width = 4
-    this.system = SYS.traditional
+    this.isPuzzleSystem = false
 
     /* ---- Default cells ---- */
     this.board = [
@@ -81,11 +81,12 @@ export default class ParkingLot {
 
     /* ---- Place the cars nodes ---- */
     // TODO: change into randomize function
-    this.placeCars()
+    // this.placeCars()
+    this.randomize()
 
     /* ---- Event listener ---- */
 
-    // Manually append cars
+    // Manually append cars TODO: Move into seperate function
     this.childEl.forEach(function (lot) {
       lot.addEventListener('click', function () {
         if (parent.checkbox.checked) {
@@ -109,11 +110,7 @@ export default class ParkingLot {
     // Change the system type
     this.systemBtns.forEach((btn) =>
       btn.addEventListener('click', function () {
-        const systemType = this.dataset.sys
-        park.system = SYS[systemType] ?? SYS.traditional
-        park.systemInfo.innerText =
-          park.system.charAt(0).toUpperCase() +
-          park.system.slice(1, park.system.length)
+        park.changeSystemBtnEventListener(this)
       })
     )
 
@@ -131,6 +128,16 @@ export default class ParkingLot {
         park.changeSizeEventListener(this, park)
       })
     )
+  }
+
+  /**
+   * @param {object} buttonEL Button HTML element
+   */
+  changeSystemBtnEventListener(buttonEL) {
+    const systemType = buttonEL.dataset.sys
+    const isPuzzleSystem = systemType === 'puzzle' ? true : false
+    this.isPuzzleSystem = isPuzzleSystem
+    this.systemInfo.innerText = isPuzzleSystem ? 'Puzzle' : 'Traditional'
   }
 
   createCar(row, col) {
