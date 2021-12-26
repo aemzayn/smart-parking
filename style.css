@@ -11,6 +11,7 @@ body {
   padding: 0;
   box-sizing: border-box;
   font-family: sans-serif;
+  background-color: #fffaf0;
 }
 
 :root {
@@ -77,6 +78,22 @@ button:hover {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 4px;
+}
+
+.controller p {
+  display: flex;
+  align-items: center;
+}
+
+.controller p span {
+  display: inline-block;
+  font-size: 0.8rem;
+  color: #7e3441;
+  font-weight: bold;
+  padding: 0.1rem 0.2rem;
+  background-color: #feebc8;
+  border-radius: 4px;
+  margin-left: 2px;
 }
 
 /* Parking lot */

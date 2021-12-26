@@ -15,8 +15,7 @@
         <h1>DEMO</h1>
 
         <section id="time" class="time">
-          <p>Time</p>
-          <span id="clock" class="clock">00:00</span>
+          <p>Time <span id="clock" class="clock">00:00</span></p>
           <div class="grid">
             <button id="start-pause" class="start-pause">Start</button>
             <button id="reset" class="reset" onclick="location.reload()">
@@ -56,13 +55,15 @@
         </section>
 
         <section>
-          <p>Sizes: <span id="sizes">4x4</span></p>
+          <p>Sizes: <span id="size-info">4x4</span></p>
           <div class="grid">
-            <button data-width="4" class="selected">4x4</button>
-            <button data-width="5">5x5</button>
-            <button data-width="6">6x6</button>
-            <button data-width="7">7x7</button>
-            <button data-width="8">8x8</button>
+            <button class="sizes-button" data-width="4" class="selected">
+              4x4
+            </button>
+            <button class="sizes-button" data-width="5">5x5</button>
+            <button class="sizes-button" data-width="6">6x6</button>
+            <button class="sizes-button" data-width="7">7x7</button>
+            <button class="sizes-button" data-width="8">8x8</button>
           </div>
         </section>
 

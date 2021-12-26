@@ -76,6 +76,8 @@ export default class ParkingLot {
     this.placeCarsBtn = document.getElementById('place')
     this.systemBtns = document.querySelectorAll('#system button')
     this.systemInfo = document.querySelector('#system span')
+    this.sizeBtns = document.querySelectorAll('.sizes-button')
+    this.sizeInfo = document.getElementById('size-info')
 
     /* ---- Place the cars nodes ---- */
     // TODO: change into randomize function
@@ -122,6 +124,68 @@ export default class ParkingLot {
     this.startBtn.addEventListener('click', () => {
       this.generatePath()
     })
+
+    // change size of the parking lot
+    this.sizeBtns.forEach((btn) =>
+      btn.addEventListener('click', function () {
+        park.changeSizeEventListener(this, park)
+      })
+    )
+  }
+
+  reInitEventListener() {}
+
+  emptyArrays() {
+    let arr = []
+    for (let i = 0; i < this.width; i++) {
+      let row = []
+      for (let j = 0; j < this.width; j++) {
+        row.push('')
+      }
+      arr.push(row)
+    }
+
+    this.board = arr.map((a) => a)
+    this.cells = arr.map((rows, row) =>
+      rows.map((_, col) => {
+        const el = this.getElement(row, col)
+        const node = new Node(TYPES.OPEN_SPACE, row, col, el)
+
+        return node
+      })
+    )
+
+    this.cost = arr.map((a) => a.map(() => 1))
+  }
+
+  changeSizeEventListener(el, park) {
+    const width = Number(el.dataset.width)
+    park.width = width
+
+    // remove element
+    park.root.innerHTML = ''
+
+    // update css variable
+    park.root.style.setProperty('--cells', width)
+    park.root.style.setProperty('--width', 80 / width + 'vh')
+
+    // add children
+    for (let row = 0; row < width; row++) {
+      for (let col = 0; col < width; col++) {
+        let newEl = document.createElement('div')
+        newEl.dataset.row = row
+        newEl.dataset.col = col
+        if (row === width - 1 && col === 0) {
+          newEl.classList.add('exit')
+        }
+        park.root.appendChild(newEl)
+      }
+    }
+
+    // update cost and node size
+    park.emptyArrays()
+
+    park.sizeInfo.innerText = `${width}x${width}`
   }
 
   removeCar(space, row, col) {
@@ -276,7 +340,6 @@ export default class ParkingLot {
       current.key !== this.startKey &&
       parentForCell[currentKey] !== undefined
     ) {
-      console.log(current)
       path.push(current)
       const { key, cell } = parentForCell[currentKey]
       currentKey = key
@@ -296,23 +359,23 @@ export default class ParkingLot {
   }
 
   randomize() {
-    const numOfCars = this.width - 1 // 3
+    const numOfCars = this.width - 1
     const carKeys = []
     while (carKeys.length < numOfCars) {
-      let row = Math.floor(Math.random() * (this.width - 0))
-      let col = Math.floor(Math.random() * (this.width - 0))
+      let row = Math.floor(Math.random() * this.width)
+      let col = Math.floor(Math.random() * this.width)
       let key = `${row}x${col}`
       if (key === `${this.width - 1}x0`) continue // continue if car keys is in exit
       if (carKeys.includes(key)) continue // if there's same key continue
       carKeys.push(key)
     }
 
-    // relocate the cars
+    // empty the boards
     this.clearBoard()
 
-    carKeys.forEach((c, i) => {
-      let [row, col] = c.split('x')
-      let id = i === 1 ? 'T' : 'X'
+    carKeys.forEach((key, i) => {
+      const [row, col] = key.split('x')
+      const id = i === 0 ? 'T' : 'X'
       this.board[row][col] = id
     })
 
@@ -325,20 +388,18 @@ export default class ParkingLot {
   placeCars() {
     this.board.forEach((row, x) => {
       row.forEach((col, y) => {
-        let el = this.getElement(x, y)
-        let node = new Node(col || 'O', x, y, el)
+        const el = this.getElement(x, y)
+        const node = new Node(col || 'O', x, y, el)
         this.cells[x][y] = node
 
         // set cost
         if (col === 'X' || col === 'T') {
           this.cost[x][y] = Number(2)
-        } else {
-          this.cost[x][y] = 1
         }
 
         // add car
         if (CARS.includes(col)) {
-          let car = this.createCar(x, y)
+          const car = this.createCar(x, y)
           if (car) {
             el.appendChild(car)
           }
@@ -348,24 +409,7 @@ export default class ParkingLot {
   }
 
   clearBoard() {
-    this.board = [
-      ['', '', '', ''],
-      ['', '', '', ''],
-      ['', '', '', ''],
-      ['', '', '', ''],
-    ]
-    this.cells = [
-      ['', '', '', ''],
-      ['', '', '', ''],
-      ['', '', '', ''],
-      ['', '', '', ''],
-    ]
-    this.cost = [
-      [1, 1, 1, 1],
-      [1, 1, 1, 1],
-      [1, 1, 1, 1],
-      [1, 1, 1, 1],
-    ]
+    this.emptyArrays()
     this.isTargetPlaced = false
     this.childEl.forEach((el) => {
       if (el.children.length > 0) {
@@ -374,5 +418,7 @@ export default class ParkingLot {
         }
       }
     })
+
+    console.log(this.cells)
   }
 }
