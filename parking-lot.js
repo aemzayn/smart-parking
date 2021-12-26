@@ -226,7 +226,9 @@ export default class ParkingLot {
 
   changeSizeEventListener(el, park) {
     const width = Number(el.dataset.width)
+    if (park.width === width) return // don't do anything if already the same width
     park.width = width
+    park.targetKey = `${width - 1}x0`
 
     // remove element
     park.root.innerHTML = ''
