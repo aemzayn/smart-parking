@@ -89,21 +89,7 @@ export default class ParkingLot {
     // Manually append cars TODO: Move into seperate function
     this.childEl.forEach(function (lot) {
       lot.addEventListener('click', function () {
-        if (parent.checkbox.checked) {
-          // this.classList.toggle("clicked");
-          const { row, col } = this.dataset
-
-          if (this.children && this.children.length > 0) {
-            // if there's already a car remove it
-            park.cost = park.modify2DArray(park.cost, row, col, 1)
-            park.removeCar(this, row, col)
-          } else {
-            // add car
-            let car = park.createCar(row, col)
-            if (car) this.appendChild(car)
-            park.cost = park.modify2DArray(park.cost, row, col, 2)
-          }
-        }
+        park.clickToAddCarEventListener(this)
       })
     })
 
@@ -138,6 +124,24 @@ export default class ParkingLot {
     const isPuzzleSystem = systemType === 'puzzle' ? true : false
     this.isPuzzleSystem = isPuzzleSystem
     this.systemInfo.innerText = isPuzzleSystem ? 'Puzzle' : 'Traditional'
+  }
+
+  clickToAddCarEventListener(el) {
+    if (this.checkbox.checked) {
+      // this.classList.toggle("clicked");
+      const { row, col } = el.dataset
+
+      if (el.children && el.children.length > 0) {
+        // if there's already a car remove it
+        this.cost = this.modify2DArray(this.cost, row, col, 1)
+        this.removeCar(el, row, col)
+      } else {
+        // add car
+        let car = this.createCar(row, col)
+        if (car) el.appendChild(car)
+        this.cost = this.modify2DArray(this.cost, row, col, 2)
+      }
+    }
   }
 
   createCar(row, col) {
@@ -231,12 +235,18 @@ export default class ParkingLot {
     park.root.style.setProperty('--cells', width)
     park.root.style.setProperty('--width', 80 / width + 'vh')
 
+    park.isTargetPlaced = false
+
     // add children
     for (let row = 0; row < width; row++) {
       for (let col = 0; col < width; col++) {
         let newEl = document.createElement('div')
         newEl.dataset.row = row
         newEl.dataset.col = col
+
+        newEl.addEventListener('click', function () {
+          park.clickToAddCarEventListener(this)
+        })
         if (row === width - 1 && col === 0) {
           newEl.classList.add('exit')
         }
