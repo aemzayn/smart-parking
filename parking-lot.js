@@ -94,13 +94,13 @@ export default class ParkingLot {
 
           if (this.children && this.children.length > 0) {
             // if there's already a car remove it
-            park.cost[row][col] = 0
+            park.cost = park.modify2DArray(park.cost, row, col, 1)
             park.removeCar(this, row, col)
           } else {
             // add car
             let car = park.createCar(row, col)
             if (car) this.appendChild(car)
-            park.cost[row][col] = 2
+            park.cost = park.modify2DArray(park.cost, row, col, 2)
           }
         }
       })
@@ -140,18 +140,33 @@ export default class ParkingLot {
       return
     }
 
+    const oldNode = this.cells[row][col]
     let el = document.createElement('img')
     if (!this.isTargetPlaced) {
       el.src = './images/red-car.png'
-      this.board[row][col] = 'T'
+      this.board = this.modify2DArray(this.board, row, col, 'T')
       this.isTargetPlaced = true
       this.startKey = `${row}x${col}`
       this.startPos = { row, col }
-      this.cells[row][col].type = TYPES.TARGET_CAR
+
+      const newNode = new Node(
+        TYPES.TARGET_CAR,
+        oldNode.row,
+        oldNode.col,
+        oldNode.el
+      )
+      this.cells = this.modify2DArray(this.cells, row, col, newNode)
     } else {
-      this.board[row][col] = 'X'
+      this.board = this.modify2DArray(this.board, row, col, 'X')
       el.src = './images/blue-car.png'
-      this.cells[row][col].type = TYPES.OTHER_CARS
+
+      const newNode = new Node(
+        TYPES.OTHER_CARS,
+        oldNode.row,
+        oldNode.col,
+        oldNode.el
+      )
+      this.cells = this.modify2DArray(this.cells, row, col, newNode)
     }
     return el
   }
@@ -159,29 +174,37 @@ export default class ParkingLot {
   removeCar(space, row, col) {
     let car = this.board[row][col]
     if (car === 'T') this.isTargetPlaced = false
-    this.board[row][col] = ''
+    this.board = this.modify2DArray(this.board, row, col, '')
     space.children[0]?.remove()
-    this.cells[row][col].type = TYPES.OPEN_SPACE
+
+    const oldNode = this.cells[row][col]
+    const newNode = new Node(
+      TYPES.OPEN_SPACE,
+      oldNode.row,
+      oldNode.col,
+      oldNode.el
+    )
+    this.cells = this.modify2DArray(this.cells, row, col, newNode)
   }
 
   /**
    * Append cars to the UI and create node
    */
   placeCars() {
-    this.board.forEach((row, x) => {
-      row.forEach((col, y) => {
-        const el = this.getElement(x, y)
-        const node = new Node(col || 'O', x, y, el)
-        this.cells[x][y] = node
+    this.board.forEach((rows, row) => {
+      rows.forEach((val, col) => {
+        const el = this.getElement(row, col)
+        const node = new Node(val || 'O', row, col, el)
+        this.cells = this.modify2DArray(this.cells, row, col, node)
 
-        // set cost
-        if (col === 'X' || col === 'T') {
-          this.cost[x][y] = Number(2)
+        // set cost to 2 for cars
+        if (val === 'X' || val === 'T') {
+          this.cost = this.modify2DArray(this.cost, row, col, 2)
         }
 
         // add car
-        if (CARS.includes(col)) {
-          const car = this.createCar(x, y)
+        if (CARS.includes(val)) {
+          const car = this.createCar(row, col)
           if (car) {
             el.appendChild(car)
           }
@@ -250,7 +273,7 @@ export default class ParkingLot {
     carKeys.forEach((key, i) => {
       const [row, col] = key.split('x')
       const id = i === 0 ? 'T' : 'X'
-      this.board[row][col] = id
+      this.board = this.modify2DArray(this.board, row, col, id)
     })
 
     this.placeCars()
@@ -286,7 +309,7 @@ export default class ParkingLot {
    * @param {int} col
    * @param {any} newVal The new value
    */
-  replace(arr, row, col, newVal) {
+  modify2DArray(arr, row, col, newVal) {
     return arr.map((rows, x) =>
       rows.map((val, y) => {
         if (x === row && y === col) {
