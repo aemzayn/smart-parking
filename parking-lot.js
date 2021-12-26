@@ -257,6 +257,73 @@ export default class ParkingLot {
     return this.board[3][0] === 'T'
   }
 
+  getElement(row, col) {
+    return document.querySelector(`[data-row="${row}"][data-col="${col}"]`)
+  }
+
+  randomize() {
+    const numOfCars = this.width - 1
+    const carKeys = []
+    while (carKeys.length < numOfCars) {
+      let row = Math.floor(Math.random() * this.width)
+      let col = Math.floor(Math.random() * this.width)
+      let key = `${row}x${col}`
+      if (key === `${this.width - 1}x0`) continue // continue if car keys is in exit
+      if (carKeys.includes(key)) continue // if there's same key continue
+      carKeys.push(key)
+    }
+
+    // empty the boards
+    this.clearBoard()
+
+    carKeys.forEach((key, i) => {
+      const [row, col] = key.split('x')
+      const id = i === 0 ? 'T' : 'X'
+      this.board[row][col] = id
+    })
+
+    this.placeCars()
+  }
+
+  /**
+   * Append cars to the UI and create node
+   */
+  placeCars() {
+    this.board.forEach((row, x) => {
+      row.forEach((col, y) => {
+        const el = this.getElement(x, y)
+        const node = new Node(col || 'O', x, y, el)
+        this.cells[x][y] = node
+
+        // set cost
+        if (col === 'X' || col === 'T') {
+          this.cost[x][y] = Number(2)
+        }
+
+        // add car
+        if (CARS.includes(col)) {
+          const car = this.createCar(x, y)
+          if (car) {
+            el.appendChild(car)
+          }
+        }
+      })
+    })
+  }
+
+  clearBoard() {
+    this.emptyArrays()
+    this.isTargetPlaced = false
+    this.childEl.forEach((el) => {
+      if (el.children.length > 0) {
+        for (const child of el.children) {
+          child.remove()
+        }
+        console.dir(el)
+      }
+    })
+  }
+
   async generatePath() {
     const queue = new PriorityQueue() // Frontier
     const parentForCell = {} // For keeping track parent-child relationship
@@ -352,73 +419,5 @@ export default class ParkingLot {
 
     const exploredNodes = Object.keys(parentForCell).length
     this.nodeInfoEl.innerText = `Nodes explored: ${exploredNodes}`
-  }
-
-  getElement(row, col) {
-    return document.querySelector(`[data-row="${row}"][data-col="${col}"]`)
-  }
-
-  randomize() {
-    const numOfCars = this.width - 1
-    const carKeys = []
-    while (carKeys.length < numOfCars) {
-      let row = Math.floor(Math.random() * this.width)
-      let col = Math.floor(Math.random() * this.width)
-      let key = `${row}x${col}`
-      if (key === `${this.width - 1}x0`) continue // continue if car keys is in exit
-      if (carKeys.includes(key)) continue // if there's same key continue
-      carKeys.push(key)
-    }
-
-    // empty the boards
-    this.clearBoard()
-
-    carKeys.forEach((key, i) => {
-      const [row, col] = key.split('x')
-      const id = i === 0 ? 'T' : 'X'
-      this.board[row][col] = id
-    })
-
-    this.placeCars()
-  }
-
-  /**
-   * Append cars to the UI and create node
-   */
-  placeCars() {
-    this.board.forEach((row, x) => {
-      row.forEach((col, y) => {
-        const el = this.getElement(x, y)
-        const node = new Node(col || 'O', x, y, el)
-        this.cells[x][y] = node
-
-        // set cost
-        if (col === 'X' || col === 'T') {
-          this.cost[x][y] = Number(2)
-        }
-
-        // add car
-        if (CARS.includes(col)) {
-          const car = this.createCar(x, y)
-          if (car) {
-            el.appendChild(car)
-          }
-        }
-      })
-    })
-  }
-
-  clearBoard() {
-    this.emptyArrays()
-    this.isTargetPlaced = false
-    this.childEl.forEach((el) => {
-      if (el.children.length > 0) {
-        for (const child of el.children) {
-          child.remove()
-        }
-      }
-    })
-
-    console.log(this.cells)
   }
 }
