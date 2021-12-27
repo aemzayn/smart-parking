@@ -1,5 +1,5 @@
 import PriorityQueue from './priority-queue.js'
-import { reset, pause, sleep } from './clock.js'
+import { pause, sleep } from './clock.js'
 
 const TYPES = {
   OTHER_CARS: 'X',
@@ -14,7 +14,11 @@ class Node {
     this.col = col
     this.key = `${row}x${col}`
     this.el = el
-    this.exitTime = Math.floor(Math.random() * 24)
+    this.exitTime = type !== TYPES.OPEN_SPACE ? this.assignExitTime() : 0
+  }
+
+  assignExitTime() {
+    return Math.floor(Math.random() * 24)
   }
 
   /**
@@ -30,7 +34,7 @@ const CARS = ['T', 'X']
 
 export default class ParkingLot {
   constructor() {
-    let park = this // for scoping
+    const park = this // for scoping
     this.isTargetPlaced = false
     this.startKey = ''
     this.targetKey = '3x0'
@@ -40,6 +44,9 @@ export default class ParkingLot {
     this.isPuzzleSystem = false
     this.carExitTimeInfoEl = document.querySelector('.car-info')
 
+    // maximum capacity of traditional parking
+    this.maxTraditionalCap = 7
+
     /* ---- Default cells ---- */
     this.board = [
       ['', '', '', 'T'],
@@ -48,6 +55,10 @@ export default class ParkingLot {
       ['', '', '', ''],
     ]
 
+    /**
+     * Store cost
+     * @type {number} cose
+     */
     this.cost = [
       [1, 1, 1, 1],
       [1, 1, 1, 1],
@@ -56,7 +67,8 @@ export default class ParkingLot {
     ]
 
     /**
-     * @type {Node[][]}
+     * For storring node
+     * @type {Array<Array<Node>>}
      */
     this.cells = [
       ['', '', '', ''],
@@ -78,13 +90,11 @@ export default class ParkingLot {
     this.sizeInfo = document.getElementById('size-info')
 
     /* ---- Place the cars nodes ---- */
-    // TODO: change into randomize function
-    // this.placeCars()
     this.randomize()
 
     /* ---- Event listener ---- */
 
-    // Manually append cars TODO: Move into seperate function
+    // Manually append cars
     this.childEl.forEach(function (lot) {
       lot.addEventListener('click', function () {
         park.clickToAddCarEventListener(this)
@@ -101,7 +111,7 @@ export default class ParkingLot {
     // Put cars in random place
     this.randomizeBtn.addEventListener('click', () => this.randomize())
 
-    // Solve the maze
+    // Solve the exit car
     this.startBtn.addEventListener('click', () => {
       if (this.isPuzzleSystem) {
         this.solvePuzzle()
@@ -113,16 +123,26 @@ export default class ParkingLot {
     // change size of the parking lot
     this.sizeBtns.forEach((btn) =>
       btn.addEventListener('click', function () {
-        park.changeSizeEventListener(this, park)
+        park.changeSizeEventListener(this)
       })
     )
+
+    // place randomly generated cars to supposed place based on exit time
+    this.placeCarsBtn.addEventListener('click', () => {
+      if (this.isPuzzleSystem) {
+        // TODO: puzzle place cars function
+      } else {
+        this.placeTraditional()
+      }
+    })
   }
 
   /**
-   * @param {object} buttonEL Button HTML element
+   * Change the system type
+   * @param {Element} el Button HTML element
    */
-  changeSystemBtnEventListener(buttonEL) {
-    const systemType = buttonEL.dataset.sys
+  changeSystemBtnEventListener(el) {
+    const systemType = el.dataset.sys
     const isPuzzleSystem = systemType === 'puzzle' ? true : false
     this.isPuzzleSystem = isPuzzleSystem
     this.systemInfo.innerText = isPuzzleSystem ? 'Puzzle' : 'Traditional'
@@ -150,6 +170,12 @@ export default class ParkingLot {
     }
   }
 
+  /**
+   * Create HTML Img element
+   * @param {number} row
+   * @param {number} col
+   * @returns {Element} image element
+   */
   createCar(row, col) {
     if (row === this.width - 1 && col === 0) {
       alert('Cannot place car on exit.')
@@ -187,11 +213,17 @@ export default class ParkingLot {
     return el
   }
 
-  removeCar(space, row, col) {
+  /**
+   * Remove car inside div element
+   * @param {Element} el HTML element
+   * @param {number} row
+   * @param {number} col
+   */
+  removeCar(el, row, col) {
     let car = this.board[row][col]
     if (car === 'T') this.isTargetPlaced = false
     this.board = this.modify2DArray(this.board, row, col, '')
-    space.children[0]?.remove()
+    el.children[0]?.remove()
 
     const oldNode = this.cells[row][col]
     const newNode = new Node(
@@ -229,22 +261,48 @@ export default class ParkingLot {
     })
   }
 
-  changeSizeEventListener(el, park) {
+  /**
+   * Change board size
+   * @param {Element} el HTML element
+   * @returns
+   */
+  changeSizeEventListener(el) {
     const width = Number(el.dataset.width)
-    if (park.width === width) return // don't do anything if already the same width
-    park.width = width
-    park.targetKey = `${width - 1}x0`
+    if (this.width === width) return // don't do anything if already the same width
+    this.width = width
+    this.targetKey = `${width - 1}x0`
+
+    switch (width) {
+      case 4:
+        this.maxTraditionalCap = 7
+        break
+      case 5:
+        this.maxTraditionalCap = 13
+        break
+      case 6:
+        this.maxTraditionalCap = 21
+        break
+      case 7:
+        this.maxTraditionalCap = 25
+        break
+      case 8:
+        this.maxTraditionalCap = 36
+        break
+      default:
+        break
+    }
 
     // remove element
-    park.root.innerHTML = ''
+    this.root.innerHTML = ''
 
     // update css variable
-    park.root.style.setProperty('--cells', width)
-    park.root.style.setProperty('--width', 80 / width + 'vh')
+    this.root.style.setProperty('--cells', width)
+    this.root.style.setProperty('--width', 80 / width + 'vh')
 
-    park.isTargetPlaced = false
+    this.isTargetPlaced = false
 
     // add children
+    const root = this
     for (let row = 0; row < width; row++) {
       for (let col = 0; col < width; col++) {
         let newEl = document.createElement('div')
@@ -252,27 +310,36 @@ export default class ParkingLot {
         newEl.dataset.col = col
 
         newEl.addEventListener('click', function () {
-          park.clickToAddCarEventListener(this)
+          root.clickToAddCarEventListener(this)
         })
         if (row === width - 1 && col === 0) {
           newEl.classList.add('exit')
         }
-        park.root.appendChild(newEl)
+        this.root.appendChild(newEl)
       }
     }
 
-    park.childEl = Array.from(park.root.children)
+    this.childEl = Array.from(this.root.children)
 
     // update cost and node size
-    park.emptyArrays()
+    this.emptyArrays()
 
-    park.sizeInfo.innerText = `${width}x${width}`
+    this.sizeInfo.innerText = `${width}x${width}`
   }
 
+  /**
+   * Return correspending HTML element based on data-row and data-col
+   * @param {number} row
+   * @param {number} col
+   * @returns {Element}
+   */
   getElement(row, col) {
     return document.querySelector(`[data-row="${row}"][data-col="${col}"]`)
   }
 
+  /**
+   * Put random cars in random position
+   */
   randomize() {
     // empty the boards
     this.emptyArrays()
@@ -306,6 +373,9 @@ export default class ParkingLot {
     this.placeCars()
   }
 
+  /**
+   * Format board, cells and cost into its default state based on width
+   */
   emptyArrays() {
     let arr = []
     for (let i = 0; i < this.width; i++) {
@@ -331,9 +401,9 @@ export default class ParkingLot {
 
   /**
    * Replace the value in the array
-   * @param {any[][]} arr
-   * @param {int} row
-   * @param {int} col
+   * @param {Array<Array<any>>} arr
+   * @param {number} row
+   * @param {number} col
    * @param {any} newVal The new value
    */
   modify2DArray(arr, row, col, newVal) {
@@ -352,7 +422,36 @@ export default class ParkingLot {
     console.log('solving...')
   }
 
+  /**
+   * Flat board into one dimensional array
+   * @param {Array<Array<Node>>} board
+   * @returns {Array<Node>}
+   */
+  flattenedBoard(board) {
+    const ret = []
+    for (let x = 0; x < board.length; x++) {
+      for (let y = 0; y < board[x].length; y++) {
+        if (board[x][y].exitTime !== 0) {
+          ret.push(board[x][y])
+        }
+      }
+    }
+    return ret
+  }
+
   async placeTraditional() {
+    // bikin goal state
+    const cars = []
+    const goalBoard = this.cells.slice().map((rows) =>
+      rows.map((node) => {
+        const { exitTime } = node
+        if (exitTime) cars.push(node)
+        return exitTime
+      })
+    )
+    const flattened = this.flattenedBoard(this.cells)
+    console.log(flattened)
+
     // kumpulin semua mobil
     // setiap mobil
   }
