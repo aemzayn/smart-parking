@@ -129,7 +129,8 @@ export default class ParkingLot {
   }
 
   clickToAddCarEventListener(el) {
-    const { row, col } = el.dataset
+    const row = Number(el.dataset.row)
+    const col = Number(el.dataset.col)
     if (this.checkbox.checked) {
       // this.classList.toggle("clicked");
 
@@ -150,10 +151,6 @@ export default class ParkingLot {
   }
 
   createCar(row, col) {
-    // change string into number
-    row = +row
-    col = +col
-
     if (row === this.width - 1 && col === 0) {
       alert('Cannot place car on exit.')
       return
