@@ -352,7 +352,10 @@ export default class ParkingLot {
     console.log('solving...')
   }
 
-  async placeTraditional() {}
+  async placeTraditional() {
+    // kumpulin semua mobil
+    // setiap mobil
+  }
 
   async solveTraditional() {
     const queue = new PriorityQueue() // Frontier
@@ -361,6 +364,7 @@ export default class ParkingLot {
     const costToTarget = {}
     const [tRow, tCol] = this.targetKey.split('x')
     const [startRow, startCol] = this.startKey.split('x')
+    let isSolutionFound = false
 
     parentForCell[this.startKey] = {
       parentKey: this.startKey,
@@ -375,13 +379,16 @@ export default class ParkingLot {
       const currentKey = `${row}x${col}`
       const current = this.cells[row][col]
 
-      if (currentKey === this.targetKey) break
+      if (currentKey === this.targetKey) {
+        isSolutionFound = true
+        break
+      }
 
       const neighbors = [
-        { row: row - 1, col }, // top
-        { row, col: col + 1 }, // right
         { row: row + 1, col }, // below
         { row, col: col - 1 }, // left
+        { row, col: col + 1 }, // right
+        { row: row - 1, col }, // top
       ]
 
       for (let i = 0; i < neighbors.length; ++i) {
@@ -427,6 +434,11 @@ export default class ParkingLot {
       await sleep(0.25)
     }
     pause()
+
+    if (!isSolutionFound) {
+      alert('No solution found')
+      return
+    }
 
     const path = []
     let currentKey = `${tRow}x${tCol}`
