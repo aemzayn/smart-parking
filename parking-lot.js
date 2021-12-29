@@ -9,12 +9,12 @@ const TYPES = {
 
 class Node {
   constructor(type, row, col, el) {
+    this.exitTime = type !== TYPES.OPEN_SPACE ? this.assignExitTime() : 0
     this.type = type
+    this.key = `${row}x${col}`
     this.row = row
     this.col = col
-    this.key = `${row}x${col}`
     this.el = el
-    this.exitTime = type !== TYPES.OPEN_SPACE ? this.assignExitTime() : 0
   }
 
   assignExitTime() {
@@ -116,7 +116,7 @@ export default class ParkingLot {
       if (this.isPuzzleSystem) {
         this.solvePuzzle()
       } else {
-        this.solveTraditional()
+        this.solveTraditional(this.startKey, this.targetKey)
       }
     })
 
@@ -440,36 +440,105 @@ export default class ParkingLot {
   }
 
   async placeTraditional() {
-    // bikin goal state
-    const cars = []
-    const goalBoard = this.cells.slice().map((rows) =>
-      rows.map((node) => {
-        const { exitTime } = node
-        if (exitTime) cars.push(node)
-        return exitTime
-      })
-    )
-    const flattened = this.flattenedBoard(this.cells)
-    console.log(flattened)
+    const carsByExitTime = this.flattenedBoard(this.cells).sort((a, b) => {
+      if (a.exitTime < b.exitTime) return -1
+      else if (a.exitTime > b.exitTime) return 1
+      else return 0
+    })
+
+    const carsTarget = {}
+    const ret = [
+      ['', '', '', ''],
+      ['', '', '', ''],
+      ['', '', '', ''],
+      ['', '', '', ''],
+    ]
+
+    // for loop dari row = 0 dan col = reverse dari row, dan row plus 2
+    // kalo mobil udah di baris yang biasa gak usah dipindahin lagi
+    const frontier = []
+    const width = this.width
+
+    const columnCars = []
+    let c = this.width - 1
+    while (c >= 0) {
+      columnCars.push(c)
+      c -= 2
+    }
+
+    for (let col = width - 1; col >= 0; col -= 2) {
+      for (let row = 0; row < width; row++) {
+        // don't place cars in bottom row except bottom right corner
+        if (col < width - 1 && row === width - 1) continue
+
+        // while there's car place it
+        if (carsByExitTime.length > 0) {
+          const current = carsByExitTime.pop()
+          const currentKey = current.key
+
+          // if cars already in the used line then continue
+          if (columnCars.includes(current.col)) {
+            if (
+              current.col === this.width - 1 &&
+              current.row === this.width - 1
+            ) {
+              // if cars in bottom right corner don't move it
+              continue
+            } else if (
+              // if cars already in used line don't move
+              current.col !== this.width - 1 &&
+              current.row < this.width - 1
+            ) {
+              continue
+            }
+          }
+
+          const targetKey = `${row}x${col}`
+          if (current.key !== targetKey) frontier.push(current)
+          carsTarget[currentKey] = targetKey
+          ret[row][col] = current
+        } else {
+          break
+        }
+      }
+    }
+
+    console.log('frontier', frontier)
+    console.log('carsTarget', carsTarget)
+
+    console.log(frontier)
+    // while (frontier.length !== 0) {
+    //   const current = frontier.pop()
+    //   const targetKey = carsTarget[current.key]
+    //   this.solveTraditional(current.key, targetKey)
+    //   await sleep(0.2)
+    //   document
+    //     .querySelectorAll('#parking-lot div')
+    //     .forEach((el) => el.classList.remove('path', 'explored'))
+    //   await sleep(0.2)
+    // }
+
+    // untuk col paling terakhir bisa sampe index = this.width
+    // untuk row < row.length - 1 maka cuman nambah mobil sebanyak row.length - 2
 
     // kumpulin semua mobil
     // setiap mobil
   }
 
-  async solveTraditional() {
+  async solveTraditional(startKey, targetKey) {
     const queue = new PriorityQueue() // Frontier
     const parentForCell = {} // For keeping track parent-child relationship
     const costFromStart = {}
     const costToTarget = {}
-    const [tRow, tCol] = this.targetKey.split('x')
-    const [startRow, startCol] = this.startKey.split('x')
+    const [tRow, tCol] = targetKey.split('x')
+    const [startRow, startCol] = startKey.split('x')
     let isSolutionFound = false
 
-    parentForCell[this.startKey] = {
-      parentKey: this.startKey,
+    parentForCell[startKey] = {
+      parentKey: startKey,
       cell: this.cells[startRow][startCol],
     }
-    costFromStart[this.startKey] = 0
+    costFromStart[startKey] = 0
 
     queue.enqueue(this.startPos, 0)
 
@@ -478,7 +547,7 @@ export default class ParkingLot {
       const currentKey = `${row}x${col}`
       const current = this.cells[row][col]
 
-      if (currentKey === this.targetKey) {
+      if (currentKey === targetKey) {
         isSolutionFound = true
         break
       }
@@ -543,7 +612,7 @@ export default class ParkingLot {
     let currentKey = `${tRow}x${tCol}`
     let current = this.cells[tRow][tCol]
 
-    while (current.key !== this.startKey && !!parentForCell[currentKey]) {
+    while (current.key !== startKey && !!parentForCell[currentKey]) {
       path.push(current)
       const { parentKey, cell } = parentForCell[currentKey]
       currentKey = parentKey
