@@ -111,7 +111,7 @@ main {
   --cells: 4;
   height: min-content;
   border: 4px solid black;
-  overflow: hidden;
+  /* overflow: hidden; */
   border-radius: 5px;
   display: grid;
   grid-template-columns: repeat(var(--cells), var(--width));
@@ -131,12 +131,16 @@ main {
 }
 
 .parking-lot > div.exit::after {
-  content: 'EXIT';
+  content: '';
   position: absolute;
-  letter-spacing: 2px;
-  color: lightcoral;
-  width: 100%;
-  height: 100%;
+  width: 20%;
+  height: 20%;
+  bottom: -12.5%;
+  left: 50%;
+  border-radius: 50px;
+  transform: translateX(-50%);
+  background-color: white;
+  border: 4px solid black;
   display: flex;
   align-items: center;
   justify-content: center;
