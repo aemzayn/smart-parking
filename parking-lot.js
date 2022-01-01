@@ -1,34 +1,7 @@
 import PriorityQueue from './priority-queue.js'
+import Node from './node.js'
+import TYPES from './types.js'
 import { pause, sleep } from './clock.js'
-
-const TYPES = {
-  OTHER_CARS: 'X',
-  TARGET_CAR: 'T',
-  OPEN_SPACE: 'O',
-}
-
-class Node {
-  constructor(type, row, col, el) {
-    this.exitTime = type !== TYPES.OPEN_SPACE ? this.assignExitTime() : 0
-    this.type = type
-    this.key = `${row}x${col}`
-    this.row = row
-    this.col = col
-    this.el = el
-  }
-
-  assignExitTime() {
-    return Math.floor(Math.random() * 24)
-  }
-
-  /**
-   * @param {Node} other Other node
-   * @returns {boolean}
-   */
-  isEqual(other) {
-    return this.key === other.key
-  }
-}
 
 const CARS = ['T', 'X']
 
@@ -41,7 +14,7 @@ export default class ParkingLot {
     this.startPos = { row: -1, col: -1 }
     this.nodeInfoEl = document.getElementById('node-info')
     this.width = 4
-    this.isPuzzleSystem = false
+    this.isPuzzleSystem = true
     this.carExitTimeInfoEl = document.querySelector('.car-info')
 
     // maximum capacity of traditional parking
@@ -114,7 +87,7 @@ export default class ParkingLot {
     // Solve the exit car
     this.startBtn.addEventListener('click', () => {
       if (this.isPuzzleSystem) {
-        this.solvePuzzle()
+        this.solvePuzzle(this.startKey)
       } else {
         this.solveTraditional(this.startKey, this.targetKey)
       }
@@ -130,11 +103,13 @@ export default class ParkingLot {
     // place randomly generated cars to supposed place based on exit time
     this.placeCarsBtn.addEventListener('click', () => {
       if (this.isPuzzleSystem) {
-        // TODO: puzzle place cars function
+        this.placePuzzle()
       } else {
         this.placeTraditional()
       }
     })
+
+    this.placePuzzle()
   }
 
   /**
@@ -418,10 +393,6 @@ export default class ParkingLot {
     return newArr
   }
 
-  async solvePuzzle() {
-    console.log('solving...')
-  }
-
   /**
    * Flat board into one dimensional array
    * @param {Array<Array<Node>>} board
@@ -625,5 +596,83 @@ export default class ParkingLot {
 
     const exploredNodes = Object.keys(parentForCell).length
     this.nodeInfoEl.innerText = `Nodes explored: ${exploredNodes}`
+  }
+
+  aStarGoalState() {
+    const flat = this.cells.flat()
+    const startTarget = flat.find((n) => n.type === TYPES.TARGET_CAR)
+    console.log(startTarget)
+    // bakal ngereturn 1 dimentional array
+    /**
+     * target harus di pojok kiri bawah
+     * goal = [
+     *  ['','','','',],
+     *  ['','','','',],
+     *  ['','','','',],
+     *  ['T','','','',],
+     * ]
+     */
+    return flat
+  }
+
+  flattenBoard(board) {
+    return board.flat(2)
+  }
+
+  equalBoards(b1, b2) {
+    const flatB2 = this.flattenBoard(b2)
+    return this.flattenBoard(b1).every((v, i) => v === flatB2[i])
+  }
+
+  hamming(current, goal) {
+    const t = this.flattenBoard(current)
+    const g = this.flattenBoard(goal)
+    let score = 0
+    for (let i = 0; i < t.length; i++) {
+      if (t[i] !== '_') {
+      }
+      if (t[i] !== g[i]) {
+        score++
+      }
+    }
+  }
+
+  async placePuzzle() {
+    const queue = new PriorityQueue()
+    const parentForCell = {}
+    const costFromStart = {}
+    const costToTarget = {}
+
+    // parentForCell[] = {}
+
+    const start = [
+      [0, 0, 0],
+      [4, 2, 0],
+      ['_', 1, 0],
+    ]
+
+    const goal = [
+      [0, 0, 1],
+      [0, 0, 2],
+      ['_', 0, 4],
+    ]
+    const s = this.flattenBoard(start).filter((s) => s !== '_')
+    const g = this.flattenBoard(goal).filter((s) => s !== '_')
+
+    console.log(s)
+    console.log(g)
+
+    let hamming = 0
+    for (let i = 0; i < s.length; i++) {
+      if (g[i] !== s[i]) {
+        hamming++
+      }
+    }
+
+    console.log(hamming)
+  }
+
+  async solvePuzzle(startKey) {
+    // todo
   }
 }
