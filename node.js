@@ -11,7 +11,7 @@ export default class Node {
   }
 
   assignExitTime() {
-    return Math.floor(Math.random() * 24)
+    return Math.floor(Math.random() * 100 + 1)
   }
 
   /**

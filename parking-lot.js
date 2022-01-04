@@ -2,6 +2,9 @@ import PriorityQueue from './priority-queue.js'
 import Node from './node.js'
 import TYPES from './types.js'
 import { pause, sleep } from './clock.js'
+import Game from './game.js'
+import { search } from './search.js'
+import Node2 from './node2.js'
 
 const CARS = ['T', 'X']
 
@@ -14,7 +17,7 @@ export default class ParkingLot {
     this.startPos = { row: -1, col: -1 }
     this.nodeInfoEl = document.getElementById('node-info')
     this.width = 4
-    this.isPuzzleSystem = true
+    this.isPuzzleSystem = false
     this.carExitTimeInfoEl = document.querySelector('.car-info')
 
     // maximum capacity of traditional parking
@@ -108,8 +111,6 @@ export default class ParkingLot {
         this.placeTraditional()
       }
     })
-
-    this.placePuzzle()
   }
 
   /**
@@ -410,6 +411,67 @@ export default class ParkingLot {
     return ret
   }
 
+  /**
+   * Create 2d array based on given dimension
+   * @param {number} dimension width and height of the array
+   * @param {any} fill can be filled as the value
+   * @returns {Array<Array<any>>}
+   */
+  create2dArray(dimension, fill = null) {
+    const ret = []
+    for (let i = 0; i < dimension; i++) {
+      const row = []
+      for (let j = 0; j < dimension; j++) {
+        if (fill) {
+          row.push(fill)
+        } else {
+          row.push('')
+        }
+      }
+      ret.push(row)
+    }
+    return ret
+  }
+
+  /**
+   * Fill empty 2d array with alphabet
+   * @param {Array<Array<Node>>} array 2d array
+   */
+  fill2dArray(array, flat = false) {
+    let result = array.slice()
+    let i = 1
+    for (let row = 0; row < result.length; row++) {
+      for (let col = 0; col < result[row].length; col++) {
+        if (row === result.length - 1 && col === 0) {
+          result = this.modify2DArray(result, row, col, '_')
+          continue
+        }
+
+        if (
+          !result[row][col] ||
+          (typeof result[row][col] === 'object' &&
+            result[row][col].exitTime === 0)
+        ) {
+          const newVal = (i + 9).toString(36)
+          result = this.modify2DArray(result, row, col, newVal)
+          i++
+          continue
+        }
+
+        if (typeof result[row][col] === 'object') {
+          result = this.modify2DArray(
+            result,
+            row,
+            col,
+            result[row][col].exitTime
+          )
+        }
+      }
+    }
+    if (flat) return result.flat()
+    return result
+  }
+
   async placeTraditional() {
     const carsByExitTime = this.flattenedBoard(this.cells).sort((a, b) => {
       if (a.exitTime < b.exitTime) return -1
@@ -418,12 +480,7 @@ export default class ParkingLot {
     })
 
     const carsTarget = {}
-    const ret = [
-      ['', '', '', ''],
-      ['', '', '', ''],
-      ['', '', '', ''],
-      ['', '', '', ''],
-    ]
+    const ret = this.create2dArray(this.width)
 
     // for loop dari row = 0 dan col = reverse dari row, dan row plus 2
     // kalo mobil udah di baris yang biasa gak usah dipindahin lagi
@@ -437,6 +494,7 @@ export default class ParkingLot {
       c -= 2
     }
 
+    // Place cars
     for (let col = width - 1; col >= 0; col -= 2) {
       for (let row = 0; row < width; row++) {
         // don't place cars in bottom row except bottom right corner
@@ -446,24 +504,6 @@ export default class ParkingLot {
         if (carsByExitTime.length > 0) {
           const current = carsByExitTime.pop()
           const currentKey = current.key
-
-          // if cars already in the used line then continue
-          if (columnCars.includes(current.col)) {
-            if (
-              current.col === this.width - 1 &&
-              current.row === this.width - 1
-            ) {
-              // if cars in bottom right corner don't move it
-              continue
-            } else if (
-              // if cars already in used line don't move
-              current.col !== this.width - 1 &&
-              current.row < this.width - 1
-            ) {
-              continue
-            }
-          }
-
           const targetKey = `${row}x${col}`
           if (current.key !== targetKey) frontier.push(current)
           carsTarget[currentKey] = targetKey
@@ -474,26 +514,55 @@ export default class ParkingLot {
       }
     }
 
-    console.log('frontier', frontier)
-    console.log('carsTarget', carsTarget)
+    // const initialState = this.fill2dArray(this.cells, true)
+    // const goalState = this.fill2dArray(ret, true)
+    const initialState = ['a', 'b', 'c', 91, 66, 'd', '_', 'e', 'f']
+    const goalState = ['a', 'b', 'c', 91, 66, 'd', 'e', '_', 'f']
 
-    console.log(frontier)
-    // while (frontier.length !== 0) {
-    //   const current = frontier.pop()
-    //   const targetKey = carsTarget[current.key]
-    //   this.solveTraditional(current.key, targetKey)
-    //   await sleep(0.2)
-    //   document
-    //     .querySelectorAll('#parking-lot div')
-    //     .forEach((el) => el.classList.remove('path', 'explored'))
-    //   await sleep(0.2)
-    // }
+    console.log(initialState)
+    console.log(goalState)
 
-    // untuk col paling terakhir bisa sampe index = this.width
-    // untuk row < row.length - 1 maka cuman nambah mobil sebanyak row.length - 2
+    const dim = this.width
 
-    // kumpulin semua mobil
-    // setiap mobil
+    const game = new Game({
+      state: initialState,
+      goalState,
+      dim,
+    })
+
+    const initialNode = new Node2(
+      {
+        state: game.state,
+        dim,
+      },
+      goalState
+    )
+
+    console.log('Solving...')
+
+    search({
+      node: initialNode,
+      iterationLimit: 10000,
+      depthLimit: 0,
+      callback: this.searchCallback,
+    })
+  }
+
+  searchCallback(err, options) {
+    if (err) console.error(err)
+    else {
+      const path = []
+      let current = options.node
+      while (current) {
+        path.push(current)
+        current = current.parent
+      }
+
+      path.reverse().forEach((n) => n.visualize())
+      console.log('Solution found!')
+      console.log('Iteration: ', options.iteration)
+      console.log('Depth: ', path.length - 1)
+    }
   }
 
   async solveTraditional(startKey, targetKey) {
@@ -624,7 +693,7 @@ export default class ParkingLot {
     return this.flattenBoard(b1).every((v, i) => v === flatB2[i])
   }
 
-  hamming(current, goal) {
+  hammingScore(current, goal) {
     const t = this.flattenBoard(current)
     const g = this.flattenBoard(goal)
     let score = 0
@@ -635,6 +704,12 @@ export default class ParkingLot {
         score++
       }
     }
+  }
+
+  manhattanDistance(currentNode, targetNode) {
+    const [cRow, cCol] = currentNode.split('x').map(Number)
+    const [tRow, tCol] = targetNode.split('x').map(Number)
+    return Math.round(tRow - cRow + (tCol - cCol))
   }
 
   async placePuzzle() {
@@ -662,14 +737,11 @@ export default class ParkingLot {
     console.log(s)
     console.log(g)
 
-    let hamming = 0
     for (let i = 0; i < s.length; i++) {
       if (g[i] !== s[i]) {
         hamming++
       }
     }
-
-    console.log(hamming)
   }
 
   async solvePuzzle(startKey) {
