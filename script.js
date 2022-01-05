@@ -24,19 +24,17 @@ function searchCallback(err, options) {
 window.onload = () => {
   const pk = new ParkingLot()
   setClock()
-  const initialState = ['a', 'b', 'c', 91, 66, 'd', '_', 'e', 'f']
-  const goalState = ['a', 'b', 'c', 91, 66, 'd', 'e', '_', 'f']
+  const initialState = [2, 8, 5, 6, '_', 3, 1, 4, 7]
+  const goalState = [1, 2, 3, 4, 5, 6, 7, 8, '_']
 
   const dim = 3
   const game = new Game({ state: initialState, goalState, dim })
   const initialNode = new Node2({ state: game.state, dim }, goalState)
-  const iterationLimit = 100
-  const depthLimit = 0
-
-  search({
-    node: initialNode,
-    iterationLimit,
-    depthLimit,
-    callback: searchCallback,
-  })
+  const iterationLimit = 10000
+  // console.log('Loading...')
+  // search({
+  //   node: initialNode,
+  //   iterationLimit,
+  //   callback: searchCallback,
+  // })
 }

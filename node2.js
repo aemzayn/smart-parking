@@ -67,13 +67,13 @@ export default class Node2 {
     console.log(board)
   }
 
+  /**
+   *
+   * @param {Node2} other
+   * @returns {boolean}
+   */
   isEqual(other) {
-    let thisState = this.state.join('')
-    let otherState = other.state.join('')
-    return (
-      thisState === otherState &&
-      this.cost === other.cost &&
-      this.depth === other.depth
-    )
+    const sameState = this.state.every((val, i) => other.state[i] === val)
+    return sameState && this.cost === other.cost && this.depth === other.depth
   }
 }

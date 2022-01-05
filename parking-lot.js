@@ -482,8 +482,6 @@ export default class ParkingLot {
     const carsTarget = {}
     const ret = this.create2dArray(this.width)
 
-    // for loop dari row = 0 dan col = reverse dari row, dan row plus 2
-    // kalo mobil udah di baris yang biasa gak usah dipindahin lagi
     const frontier = []
     const width = this.width
 
@@ -514,10 +512,8 @@ export default class ParkingLot {
       }
     }
 
-    // const initialState = this.fill2dArray(this.cells, true)
-    // const goalState = this.fill2dArray(ret, true)
-    const initialState = ['a', 'b', 'c', 91, 66, 'd', '_', 'e', 'f']
-    const goalState = ['a', 'b', 'c', 91, 66, 'd', 'e', '_', 'f']
+    const initialState = this.fill2dArray(this.cells, true)
+    const goalState = this.fill2dArray(ret, true)
 
     console.log(initialState)
     console.log(goalState)
@@ -538,14 +534,14 @@ export default class ParkingLot {
       goalState
     )
 
-    console.log('Solving...')
+    // console.log('Solving...')
 
-    search({
-      node: initialNode,
-      iterationLimit: 10000,
-      depthLimit: 0,
-      callback: this.searchCallback,
-    })
+    // search({
+    //   node: initialNode,
+    //   iterationLimit: 10000,
+    //   depthLimit: 0,
+    //   callback: this.searchCallback,
+    // })
   }
 
   searchCallback(err, options) {

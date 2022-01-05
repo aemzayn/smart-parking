@@ -47,8 +47,15 @@ export const search = (opt) => {
     return options.callback(null, options)
   }
 
+  // Expand current node
   const expandedList = options.node.expand()
+  options.expandedNodes[options.node.state.join('')] = options.node
+  options.maxExpandedNodesLength = Math.max(
+    options.maxExpandedNodesLength,
+    Object.keys(options.expandedNodes).length
+  )
 
+  // Filter just-expanded nodes
   const expandedUnexploredList = expandedList.filter((node) => {
     // Check depth
     if (options.depthLimit && node.depth > options.depthLimit) {
