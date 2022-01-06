@@ -82,7 +82,7 @@ export default class ParkingLot {
     // change size of the parking lot
     this.sizeBtns.forEach((btn) =>
       btn.addEventListener('click', function () {
-        park.changeSizeEventListener(this)
+        park.changeParkingSizeEventListener(this)
       })
     )
 
@@ -120,10 +120,10 @@ export default class ParkingLot {
       if (el.children && el.children.length > 0) {
         // if there's already a car remove it
         this.cost = this.modify2DArray(this.cost, row, col, 1)
-        this.removeCar(el, row, col)
+        this.removeCarEventListener(el, row, col)
       } else {
         // add car
-        let car = this.createCar(row, col)
+        let car = this.createCarInRowCol(row, col)
         if (car) el.appendChild(car)
         this.cost = this.modify2DArray(this.cost, row, col, 2)
       }
@@ -139,7 +139,7 @@ export default class ParkingLot {
    * @param {number} col
    * @returns {Element} image element
    */
-  createCar(row, col) {
+  createCarInRowCol(row, col) {
     if (row === this.width - 1 && col === 0) {
       alert('Cannot place car on exit.')
       return
@@ -182,7 +182,7 @@ export default class ParkingLot {
    * @param {number} row
    * @param {number} col
    */
-  removeCar(el, row, col) {
+  removeCarEventListener(el, row, col) {
     let car = this.board[row][col]
     if (car === 'T') this.isTargetPlaced = false
     this.board = this.modify2DArray(this.board, row, col, '')
@@ -199,10 +199,10 @@ export default class ParkingLot {
   }
 
   /** Append cars to the UI and create node */
-  placeCars() {
+  placeCarsFromBoard() {
     this.board.forEach((rows, row) => {
       rows.forEach((val, col) => {
-        const el = this.getElement(row, col)
+        const el = this.getElementByRowCol(row, col)
         const node = new Node(val || 'O', row, col, el)
         this.cells = this.modify2DArray(this.cells, row, col, node)
 
@@ -213,7 +213,7 @@ export default class ParkingLot {
 
         // add car
         if (CARS.includes(val)) {
-          const car = this.createCar(row, col)
+          const car = this.createCarInRowCol(row, col)
           if (car) {
             el.appendChild(car)
           }
@@ -226,7 +226,7 @@ export default class ParkingLot {
    * Change board size
    * @param {Element} el HTML button element
    */
-  changeSizeEventListener(el) {
+  changeParkingSizeEventListener(el) {
     const width = Number(el.dataset.width)
     if (this.width === width) return // don't do anything if already the same width
     this.width = width
@@ -282,7 +282,7 @@ export default class ParkingLot {
     this.childEl = Array.from(this.root.children)
 
     // update cost and node size
-    this.emptyArrays()
+    this.resetArrays()
 
     this.sizeInfo.innerText = `${width}x${width}`
   }
@@ -293,14 +293,14 @@ export default class ParkingLot {
    * @param {number} col
    * @returns {Element}
    */
-  getElement(row, col) {
+  getElementByRowCol(row, col) {
     return document.querySelector(`[data-row="${row}"][data-col="${col}"]`)
   }
 
   /** Put random cars in random position */
   randomize() {
     // empty the boards
-    this.emptyArrays()
+    this.resetArrays()
     this.isTargetPlaced = false
     this.childEl.forEach((el) => {
       if (el.children.length > 0) {
@@ -328,18 +328,18 @@ export default class ParkingLot {
       this.board = newBoard
     })
 
-    this.placeCars()
+    this.placeCarsFromBoard()
   }
 
-  /**  Format board, cells and cost into its default state based on width */
-  emptyArrays() {
+  /**  Reset board, cells and cost into its default state based on width */
+  resetArrays() {
     const empty2dArray = this.create2dArray(this.width)
     this.board = empty2dArray.slice(0)
     this.cost = this.create2dArray(this.width, 1)
 
     this.cells = empty2dArray.map((rows, row) =>
       rows.map((_, col) => {
-        const el = this.getElement(row, col)
+        const el = this.getElementByRowCol(row, col)
         const node = new Node(TYPES.OPEN_SPACE, row, col, el)
         return node
       })
@@ -373,15 +373,15 @@ export default class ParkingLot {
    * @returns {Array<Node>}
    */
   flattenedBoard(board) {
-    const ret = []
+    const array = []
     for (let x = 0; x < board.length; x++) {
       for (let y = 0; y < board[x].length; y++) {
         if (board[x][y].exitTime !== 0) {
-          ret.push(board[x][y])
+          array.push(board[x][y])
         }
       }
     }
-    return ret
+    return array
   }
 
   /**
@@ -509,7 +509,7 @@ export default class ParkingLot {
       goalState
     )
 
-    // console.log('Solving...')
+    console.log('Solving...')
 
     search({
       node: initialNode,
@@ -616,7 +616,7 @@ export default class ParkingLot {
           costToTarget[key] = Fcost
 
           queue.enqueue(neighbors[i], Fcost)
-          this.getElement(nRow, nCol).classList.add('explored')
+          this.getElementByRowCol(nRow, nCol).classList.add('explored')
           await sleep(0.5)
         }
       }
