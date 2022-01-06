@@ -107,8 +107,8 @@ main {
 }
 
 .parking-lot {
-  --width: 20vh;
-  --cells: 4;
+  --cells: 3;
+  --width: calc(80vh / var(--cells));
   height: min-content;
   border: 4px solid black;
   /* overflow: hidden; */
@@ -177,9 +177,6 @@ main {
 }
 
 /* Car info */
-.car-info {
-}
-
 .car-info.show {
   display: block;
 }

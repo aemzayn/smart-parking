@@ -1,7 +1,5 @@
-import board from './board.js'
-
 /**
- * @typedef options
+ * @typedef Options
  * @type {object}
  * @property {Node2} node
  * @property {Array<Node2>} frontier
@@ -20,7 +18,7 @@ import board from './board.js'
 
 /**
  *
- * @param {options} opt
+ * @param {Options} opt
  * @returns
  */
 export const search = (opt) => {

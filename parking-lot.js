@@ -6,6 +6,10 @@ import Game from './game.js'
 import { search } from './search.js'
 import Node2 from './node2.js'
 
+/**
+ * @typedef {import ('./search').Options} Options
+ */
+
 const CARS = ['T', 'X']
 
 export default class ParkingLot {
@@ -13,10 +17,10 @@ export default class ParkingLot {
     const park = this // for scoping
     this.isTargetPlaced = false
     this.startKey = ''
-    this.targetKey = '3x0'
+    this.targetKey = '2x0'
     this.startPos = { row: -1, col: -1 }
     this.nodeInfoEl = document.getElementById('node-info')
-    this.width = 4
+    this.width = 3
     this.isPuzzleSystem = false
     this.carExitTimeInfoEl = document.querySelector('.car-info')
 
@@ -24,34 +28,13 @@ export default class ParkingLot {
     this.maxTraditionalCap = 7
 
     /* ---- Default cells ---- */
-    this.board = [
-      ['', '', '', 'T'],
-      ['', '', '', 'X'],
-      ['', '', '', ''],
-      ['', '', '', ''],
-    ]
+    this.board = this.create2dArray(this.width)
 
-    /**
-     * Store cost
-     * @type {number} cose
-     */
-    this.cost = [
-      [1, 1, 1, 1],
-      [1, 1, 1, 1],
-      [1, 1, 1, 1],
-      [1, 1, 1, 1],
-    ]
+    /** @type {number} cose */
+    this.cost = this.create2dArray(this.width, 1)
 
-    /**
-     * For storring node
-     * @type {Array<Array<Node>>}
-     */
-    this.cells = [
-      ['', '', '', ''],
-      ['', '', '', ''],
-      ['', '', '', ''],
-      ['', '', '', ''],
-    ]
+    /** @type {Array<Array<Node>>} */
+    this.cells = this.create2dArray(this.width)
 
     /* ---- DOM Elements ---- */
     this.root = document.getElementById('parking-lot')
@@ -115,7 +98,7 @@ export default class ParkingLot {
 
   /**
    * Change the system type
-   * @param {Element} el Button HTML element
+   * @param {Element} el HTML button element
    */
   changeSystemBtnEventListener(el) {
     const systemType = el.dataset.sys
@@ -124,6 +107,10 @@ export default class ParkingLot {
     this.systemInfo.innerText = isPuzzleSystem ? 'Puzzle' : 'Traditional'
   }
 
+  /**
+   * Add car to UI
+   * @param {Element} el HTML button element
+   */
   clickToAddCarEventListener(el) {
     const row = Number(el.dataset.row)
     const col = Number(el.dataset.col)
@@ -211,9 +198,7 @@ export default class ParkingLot {
     this.cells = this.modify2DArray(this.cells, row, col, newNode)
   }
 
-  /**
-   * Append cars to the UI and create node
-   */
+  /** Append cars to the UI and create node */
   placeCars() {
     this.board.forEach((rows, row) => {
       rows.forEach((val, col) => {
@@ -239,8 +224,7 @@ export default class ParkingLot {
 
   /**
    * Change board size
-   * @param {Element} el HTML element
-   * @returns
+   * @param {Element} el HTML button element
    */
   changeSizeEventListener(el) {
     const width = Number(el.dataset.width)
@@ -313,9 +297,7 @@ export default class ParkingLot {
     return document.querySelector(`[data-row="${row}"][data-col="${col}"]`)
   }
 
-  /**
-   * Put random cars in random position
-   */
+  /** Put random cars in random position */
   randomize() {
     // empty the boards
     this.emptyArrays()
@@ -349,40 +331,31 @@ export default class ParkingLot {
     this.placeCars()
   }
 
-  /**
-   * Format board, cells and cost into its default state based on width
-   */
+  /**  Format board, cells and cost into its default state based on width */
   emptyArrays() {
-    let arr = []
-    for (let i = 0; i < this.width; i++) {
-      let row = []
-      for (let j = 0; j < this.width; j++) {
-        row.push('')
-      }
-      arr.push(row)
-    }
+    const empty2dArray = this.create2dArray(this.width)
+    this.board = empty2dArray.slice(0)
+    this.cost = this.create2dArray(this.width, 1)
 
-    this.board = arr.map((a) => a)
-    this.cells = arr.map((rows, row) =>
+    this.cells = empty2dArray.map((rows, row) =>
       rows.map((_, col) => {
         const el = this.getElement(row, col)
         const node = new Node(TYPES.OPEN_SPACE, row, col, el)
-
         return node
       })
     )
-
-    this.cost = arr.map((a) => a.map(() => 1))
   }
 
   /**
    * Replace the value in the array
-   * @param {Array<Array<any>>} arr
+   * @param {Array<Array<any>>} arr The array that will be modified
    * @param {number} row
    * @param {number} col
    * @param {any} newVal The new value
+   * @returns {Array<Array<any>>} New array
    */
   modify2DArray(arr, row, col, newVal) {
+    if (!Array.isArray(arr) || !Array.isArray(arr[0])) return arr
     const newArr = arr.map((rows, x) =>
       rows.map((val, y) => {
         if (x === +row && y === +col) {
@@ -413,9 +386,9 @@ export default class ParkingLot {
 
   /**
    * Create 2d array based on given dimension
-   * @param {number} dimension width and height of the array
-   * @param {any} fill can be filled as the value
-   * @returns {Array<Array<any>>}
+   * @param {number} dimension Width and height of the array
+   * @param {any} fill Store value in the array
+   * @returns {Array<Array<any>>} New array
    */
   create2dArray(dimension, fill = null) {
     const ret = []
@@ -436,6 +409,8 @@ export default class ParkingLot {
   /**
    * Fill empty 2d array with alphabet
    * @param {Array<Array<Node>>} array 2d array
+   * @param {boolean} flat Flat the array
+   * @returns {Array<Array<Node>> | Array<Node>}
    */
   fill2dArray(array, flat = false) {
     let result = array.slice()
@@ -452,8 +427,8 @@ export default class ParkingLot {
           (typeof result[row][col] === 'object' &&
             result[row][col].exitTime === 0)
         ) {
-          const newVal = (i + 9).toString(36)
-          result = this.modify2DArray(result, row, col, newVal)
+          const alphabet = (i + 9).toString(36)
+          result = this.modify2DArray(result, row, col, alphabet)
           i++
           continue
         }
@@ -536,14 +511,19 @@ export default class ParkingLot {
 
     // console.log('Solving...')
 
-    // search({
-    //   node: initialNode,
-    //   iterationLimit: 10000,
-    //   depthLimit: 0,
-    //   callback: this.searchCallback,
-    // })
+    search({
+      node: initialNode,
+      iterationLimit: 10000,
+      depthLimit: 0,
+      callback: this.searchCallback,
+    })
   }
 
+  /**
+   * Search callback for A* algorithm
+   * @param {Error} err
+   * @param {Options} options
+   */
   searchCallback(err, options) {
     if (err) console.error(err)
     else {
@@ -561,6 +541,11 @@ export default class ParkingLot {
     }
   }
 
+  /**
+   * A* path finding algorithm
+   * @param {string} startKey
+   * @param {string} targetKey
+   */
   async solveTraditional(startKey, targetKey) {
     const queue = new PriorityQueue() // Frontier
     const parentForCell = {} // For keeping track parent-child relationship
@@ -663,84 +648,7 @@ export default class ParkingLot {
     this.nodeInfoEl.innerText = `Nodes explored: ${exploredNodes}`
   }
 
-  aStarGoalState() {
-    const flat = this.cells.flat()
-    const startTarget = flat.find((n) => n.type === TYPES.TARGET_CAR)
-    console.log(startTarget)
-    // bakal ngereturn 1 dimentional array
-    /**
-     * target harus di pojok kiri bawah
-     * goal = [
-     *  ['','','','',],
-     *  ['','','','',],
-     *  ['','','','',],
-     *  ['T','','','',],
-     * ]
-     */
-    return flat
-  }
+  async placePuzzle() {}
 
-  flattenBoard(board) {
-    return board.flat(2)
-  }
-
-  equalBoards(b1, b2) {
-    const flatB2 = this.flattenBoard(b2)
-    return this.flattenBoard(b1).every((v, i) => v === flatB2[i])
-  }
-
-  hammingScore(current, goal) {
-    const t = this.flattenBoard(current)
-    const g = this.flattenBoard(goal)
-    let score = 0
-    for (let i = 0; i < t.length; i++) {
-      if (t[i] !== '_') {
-      }
-      if (t[i] !== g[i]) {
-        score++
-      }
-    }
-  }
-
-  manhattanDistance(currentNode, targetNode) {
-    const [cRow, cCol] = currentNode.split('x').map(Number)
-    const [tRow, tCol] = targetNode.split('x').map(Number)
-    return Math.round(tRow - cRow + (tCol - cCol))
-  }
-
-  async placePuzzle() {
-    const queue = new PriorityQueue()
-    const parentForCell = {}
-    const costFromStart = {}
-    const costToTarget = {}
-
-    // parentForCell[] = {}
-
-    const start = [
-      [0, 0, 0],
-      [4, 2, 0],
-      ['_', 1, 0],
-    ]
-
-    const goal = [
-      [0, 0, 1],
-      [0, 0, 2],
-      ['_', 0, 4],
-    ]
-    const s = this.flattenBoard(start).filter((s) => s !== '_')
-    const g = this.flattenBoard(goal).filter((s) => s !== '_')
-
-    console.log(s)
-    console.log(g)
-
-    for (let i = 0; i < s.length; i++) {
-      if (g[i] !== s[i]) {
-        hamming++
-      }
-    }
-  }
-
-  async solvePuzzle(startKey) {
-    // todo
-  }
+  async solvePuzzle() {}
 }
