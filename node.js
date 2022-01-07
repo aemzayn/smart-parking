@@ -1,13 +1,13 @@
 import TYPES from './types.js'
 
 export default class Node {
-  constructor(type, row, col, el) {
+  constructor(type, row, col) {
     this.exitTime = type !== TYPES.OPEN_SPACE ? this.assignExitTime() : 0
     this.type = type
     this.key = `${row}x${col}`
     this.row = row
     this.col = col
-    this.el = el
+    this.el = this.getElementFromRowCol()
   }
 
   assignExitTime() {
@@ -20,5 +20,11 @@ export default class Node {
    */
   isEqual(other) {
     return this.key === other.key
+  }
+
+  getElementFromRowCol() {
+    return document.querySelector(
+      `[data-row="${this.row}"][data-col="${this.col}"]`
+    )
   }
 }

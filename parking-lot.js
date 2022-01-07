@@ -23,6 +23,9 @@ export default class ParkingLot {
     this.width = 3
     this.isPuzzleSystem = false
     this.carExitTimeInfoEl = document.querySelector('.car-info')
+    this.carLocationInfoEl = document.querySelector('.car-location')
+    this.goalState = []
+    this.initialState = []
 
     // maximum capacity of traditional parking
     this.maxTraditionalCap = 7
@@ -123,13 +126,14 @@ export default class ParkingLot {
         this.removeCarEventListener(el, row, col)
       } else {
         // add car
-        let car = this.createCarInRowCol(row, col)
+        let car = this.createCarInRowCol(row, col, true)
         if (car) el.appendChild(car)
         this.cost = this.modify2DArray(this.cost, row, col, 2)
       }
     } else {
       const carNode = this.cells[row][col]
       this.carExitTimeInfoEl.innerText = carNode.exitTime
+      this.carLocationInfoEl.innerText = `(${row}, ${col})`
     }
   }
 
@@ -139,40 +143,35 @@ export default class ParkingLot {
    * @param {number} col
    * @returns {Element} image element
    */
-  createCarInRowCol(row, col) {
+  createCarInRowCol(row, col, appendNode = false) {
     if (row === this.width - 1 && col === 0) {
       alert('Cannot place car on exit.')
       return
     }
 
-    const oldNode = this.cells[row][col]
-    let el = document.createElement('img')
+    let el = document.createElement('img'),
+      carType
+
     if (!this.isTargetPlaced) {
       el.src = './images/red-car.png'
       this.board = this.modify2DArray(this.board, row, col, 'T')
       this.isTargetPlaced = true
       this.startKey = `${row}x${col}`
       this.startPos = { row, col }
-
-      const newNode = new Node(
-        TYPES.TARGET_CAR,
-        oldNode.row,
-        oldNode.col,
-        oldNode.el
-      )
-      this.cells = this.modify2DArray(this.cells, row, col, newNode)
+      carType = TYPES.TARGET_CAR
     } else {
       this.board = this.modify2DArray(this.board, row, col, 'X')
       el.src = './images/blue-car.png'
 
-      const newNode = new Node(
-        TYPES.OTHER_CARS,
-        oldNode.row,
-        oldNode.col,
-        oldNode.el
-      )
+      carType = TYPES.OTHER_CARS
+    }
+
+    if (appendNode) {
+      const oldNode = this.cells[row][col]
+      const newNode = new Node(carType, oldNode.row, oldNode.col)
       this.cells = this.modify2DArray(this.cells, row, col, newNode)
     }
+
     return el
   }
 
@@ -189,37 +188,8 @@ export default class ParkingLot {
     el.children[0]?.remove()
 
     const oldNode = this.cells[row][col]
-    const newNode = new Node(
-      TYPES.OPEN_SPACE,
-      oldNode.row,
-      oldNode.col,
-      oldNode.el
-    )
+    const newNode = new Node(TYPES.OPEN_SPACE, oldNode.row, oldNode.col)
     this.cells = this.modify2DArray(this.cells, row, col, newNode)
-  }
-
-  /** Append cars to the UI and create node */
-  placeCarsFromBoard() {
-    this.board.forEach((rows, row) => {
-      rows.forEach((val, col) => {
-        const el = this.getElementByRowCol(row, col)
-        const node = new Node(val || 'O', row, col, el)
-        this.cells = this.modify2DArray(this.cells, row, col, node)
-
-        // set cost to 2 for cars
-        if (val === 'X' || val === 'T') {
-          this.cost = this.modify2DArray(this.cost, row, col, 2)
-        }
-
-        // add car
-        if (CARS.includes(val)) {
-          const car = this.createCarInRowCol(row, col)
-          if (car) {
-            el.appendChild(car)
-          }
-        }
-      })
-    })
   }
 
   /**
@@ -285,6 +255,8 @@ export default class ParkingLot {
     this.resetArrays()
 
     this.sizeInfo.innerText = `${width}x${width}`
+
+    this.randomize()
   }
 
   /**
@@ -312,6 +284,8 @@ export default class ParkingLot {
 
     const numOfCars = this.width - 1
     const carKeys = []
+
+    // Generate random car positions
     while (carKeys.length < numOfCars) {
       let row = Math.floor(Math.random() * this.width)
       let col = Math.floor(Math.random() * this.width)
@@ -321,14 +295,45 @@ export default class ParkingLot {
       carKeys.push(key)
     }
 
+    /** @type {Array<Node>} */
+    let cars = []
     carKeys.forEach((key, i) => {
-      const [row, col] = key.split('x')
+      const [row, col] = key.split('x').map(Number)
       const id = i === 0 ? 'T' : 'X'
-      const newBoard = this.modify2DArray(this.board, row, col, id)
-      this.board = newBoard
+      this.board = this.modify2DArray(this.board, row, col, id)
+      const node = new Node(id, row, col)
+      cars.push(node)
     })
 
-    this.placeCarsFromBoard()
+    const randomizedCarsPosition = this.getRandomizedInitialState(cars)
+
+    randomizedCarsPosition.forEach((val, index) => {
+      const isCar = typeof val === 'number'
+      if (isCar) {
+        const car = cars.find((node) => node.exitTime === val)
+        const row = Math.floor(index / this.width)
+        const col = index % this.width
+        car.row = row
+        car.col = col
+        car.key = `${row}x${col}`
+        this.cells = this.modify2DArray(this.cells, row, col, car)
+      }
+    })
+
+    this.cells.forEach((rows, row) => {
+      rows.forEach((node, col) => {
+        // add car
+        // console.log(node.type);
+        if (CARS.includes(node.type)) {
+          console.log(node)
+          const el = this.getElementByRowCol(row, col)
+          const car = this.createCarInRowCol(row, col)
+          if (car) {
+            el.appendChild(car)
+          }
+        }
+      })
+    })
   }
 
   /**  Reset board, cells and cost into its default state based on width */
@@ -339,8 +344,7 @@ export default class ParkingLot {
 
     this.cells = empty2dArray.map((rows, row) =>
       rows.map((_, col) => {
-        const el = this.getElementByRowCol(row, col)
-        const node = new Node(TYPES.OPEN_SPACE, row, col, el)
+        const node = new Node(TYPES.OPEN_SPACE, row, col)
         return node
       })
     )
@@ -368,16 +372,16 @@ export default class ParkingLot {
   }
 
   /**
-   * Flat board into one dimensional array
-   * @param {Array<Array<Node>>} board
+   * Returns only node elements inside cells
+   * @param {Array<Array<Node>>} cells
    * @returns {Array<Node>}
    */
-  flattenedBoard(board) {
+  filterCell(cells) {
     const array = []
-    for (let x = 0; x < board.length; x++) {
-      for (let y = 0; y < board[x].length; y++) {
-        if (board[x][y].exitTime !== 0) {
-          array.push(board[x][y])
+    for (let x = 0; x < cells.length; x++) {
+      for (let y = 0; y < cells[x].length; y++) {
+        if (cells[x][y].exitTime !== 0) {
+          array.push(cells[x][y])
         }
       }
     }
@@ -412,9 +416,10 @@ export default class ParkingLot {
    * @param {boolean} flat Flat the array
    * @returns {Array<Array<Node>> | Array<Node>}
    */
-  fill2dArray(array, flat = false) {
+  fill2dArray(array, flat = false, returnSet = false) {
     let result = array.slice()
     let i = 1
+    const alphabets = []
     for (let row = 0; row < result.length; row++) {
       for (let col = 0; col < result[row].length; col++) {
         if (row === result.length - 1 && col === 0) {
@@ -427,7 +432,8 @@ export default class ParkingLot {
           (typeof result[row][col] === 'object' &&
             result[row][col].exitTime === 0)
         ) {
-          const alphabet = (i + 9).toString(36)
+          const alphabet = ((i % 26) + 9).toString(36).repeat(Math.ceil(i / 26))
+          alphabets.push(alphabet)
           result = this.modify2DArray(result, row, col, alphabet)
           i++
           continue
@@ -443,19 +449,180 @@ export default class ParkingLot {
         }
       }
     }
-    if (flat) return result.flat()
-    return result
+    const ret = []
+    if (flat) {
+      ret.push(result.flat())
+    } else {
+      ret.push(result)
+    }
+    if (returnSet) ret.push(alphabets)
+    return ret.length === 1 ? ret[0] : ret
+  }
+
+  /**
+   * Search callback for A* algorithm
+   * @param {Error} err
+   * @param {Options} options
+   */
+  searchCallback(err, options) {
+    if (err) console.error(err)
+    else {
+      const path = []
+      let current = options.node
+      while (current) {
+        path.push(current)
+        current = current.parent
+      }
+
+      path.reverse().forEach((n) => n.visualize())
+      console.log('Solution found!')
+      console.log('Iteration: ', options.iteration)
+      console.log('Depth: ', path.length - 1)
+    }
+  }
+
+  fillWithGivenAlphabet(array, alphabets) {
+    function shuffle(arr) {
+      let currentIndex = arr.length
+      let randomIndex
+      while (currentIndex !== 0) {
+        randomIndex = Math.floor(Math.random() * currentIndex)
+        currentIndex--
+        ;[arr[currentIndex], arr[randomIndex]] = [
+          arr[randomIndex],
+          arr[currentIndex],
+        ]
+      }
+      return arr
+    }
+
+    alphabets = shuffle(alphabets)
+
+    let ret = []
+
+    for (let i = 0; i < array.length; i++) {
+      if (typeof array[i] === 'number' || array[i] === '_') {
+        ret.push(array[i])
+      } else {
+        ret.push(alphabets.pop())
+      }
+    }
+
+    return ret
+  }
+
+  /**
+   * Check if puzzle is solvable
+   * @param {Array<string | number>} state
+   * @param {Array<string | number>} target
+   * @returns {boolean}
+   */
+  isSolvable(state, target) {
+    const inversions = {}
+    for (let i = 0; i < target.length; i++) {
+      inversions[target[i]] = 0
+      for (let j = 0; j < target.length; j++) {
+        // if
+      }
+    }
+  }
+
+  /**
+   * Find solution for traditional parking and returns shuffled array
+   * @param {Array<Node>} cars List of cars
+   * @returns {Array<string | number>} Shuffled array
+   */
+  getRandomizedInitialState(cars) {
+    // random place cars put in board
+    const carsByExitTime = cars.slice().sort((a, b) => {
+      if (a.exitTime < b.exitTime) return -1
+      else if (a.exitTime > b.exitTime) return 1
+      else return 0
+    })
+
+    const goal = this.create2dArray(this.width)
+
+    const frontier = []
+    const width = this.width
+
+    const columnCars = []
+    let c = this.width - 1
+    while (c >= 0) {
+      columnCars.push(c)
+      c -= 2
+    }
+
+    // Place cars
+    for (let col = width - 1; col >= 0; col -= 2) {
+      for (let row = 0; row < width; row++) {
+        // don't place cars in bottom row except bottom right corner
+        if (col < width - 1 && row === width - 1) continue
+
+        // while there's car place it
+        if (carsByExitTime.length > 0) {
+          const current = carsByExitTime.pop()
+          const targetKey = `${row}x${col}`
+          if (current.key !== targetKey) frontier.push(current)
+          goal[row][col] = current
+        } else {
+          break
+        }
+      }
+    }
+
+    // from board find find best place
+    const goalState = this.fill2dArray(goal, true)
+    this.goalState = goalState
+
+    // shuffle
+    const states = {}
+    states[goalState.join('')] = true
+    const g = new Game({ state: goalState, dim: this.width })
+
+    const randomNextState = (state) => {
+      const choices = Object.values(g.getAvailableActionsAndStates(state))
+      const randomIndex = Math.floor(Math.random() * choices.length)
+      const randomState = choices[randomIndex]
+      const carInBottomLeftCorner =
+        typeof randomState[randomState.length - this.width] === 'number'
+      if (states[randomState.join('')] || carInBottomLeftCorner)
+        return randomNextState(randomState)
+      return randomState
+    }
+
+    const iteration = 100
+    let randomizeState = randomNextState(goalState)
+    let i = 1
+
+    while (i < iteration) {
+      randomizeState = randomNextState(randomizeState)
+      i++
+    }
+
+    this.initialState = randomizeState
+    return randomizeState
+  }
+
+  visualize(state, label = null) {
+    let board = ''
+    for (let i = 0; i < state.length; i += this.width) {
+      let row = state.slice(i, i + this.width).join('\t')
+      board += row + '\n'
+    }
+
+    label && console.log(label)
+    console.log(board)
   }
 
   async placeTraditional() {
-    const carsByExitTime = this.flattenedBoard(this.cells).sort((a, b) => {
+    const carsByExitTime = this.filterCell(this.cells).sort((a, b) => {
       if (a.exitTime < b.exitTime) return -1
       else if (a.exitTime > b.exitTime) return 1
       else return 0
     })
 
     const carsTarget = {}
-    const ret = this.create2dArray(this.width)
+    const goal = this.create2dArray(this.width)
 
     const frontier = []
     const width = this.width
@@ -480,18 +647,15 @@ export default class ParkingLot {
           const targetKey = `${row}x${col}`
           if (current.key !== targetKey) frontier.push(current)
           carsTarget[currentKey] = targetKey
-          ret[row][col] = current
+          goal[row][col] = current
         } else {
           break
         }
       }
     }
 
-    const initialState = this.fill2dArray(this.cells, true)
-    const goalState = this.fill2dArray(ret, true)
-
-    console.log(initialState)
-    console.log(goalState)
+    const initialState = this.initialState
+    const goalState = this.goalState
 
     const dim = this.width
 
@@ -517,28 +681,6 @@ export default class ParkingLot {
       depthLimit: 0,
       callback: this.searchCallback,
     })
-  }
-
-  /**
-   * Search callback for A* algorithm
-   * @param {Error} err
-   * @param {Options} options
-   */
-  searchCallback(err, options) {
-    if (err) console.error(err)
-    else {
-      const path = []
-      let current = options.node
-      while (current) {
-        path.push(current)
-        current = current.parent
-      }
-
-      path.reverse().forEach((n) => n.visualize())
-      console.log('Solution found!')
-      console.log('Iteration: ', options.iteration)
-      console.log('Depth: ', path.length - 1)
-    }
   }
 
   /**
@@ -608,8 +750,8 @@ export default class ParkingLot {
 
           costFromStart[key] = cost
 
-          const dr = Math.pow(tRow - nRow, 2)
-          const dc = Math.pow(tCol - nCol, 2)
+          const dr = Math.round(tRow - nRow)
+          const dc = Math.round(tCol - nCol)
           const manhattanDistance = dr + dc
           const Fcost = cost + manhattanDistance
 

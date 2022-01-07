@@ -11,9 +11,11 @@
 export default class Game {
   /**
    *
-   * @param {Array<string | number>} state
-   * @param {Array<string | number>} goalState
-   * @param {number} dim dimention
+   * @param {{
+   *  state: Array<string | number>,
+   *  goalState: Array<string | number>,
+   *  dim: number
+   * }} options
    */
   constructor({ state, goalState, dim }) {
     this.state = state
@@ -27,31 +29,31 @@ export default class Game {
     }
   }
 
-  getAvailableActionsAndStates() {
+  getAvailableActionsAndStates(state = this.state) {
     let result = {}
 
-    let zeroIndex = this.state.indexOf('_')
+    let zeroIndex = state.indexOf('_')
     let row = Math.floor(zeroIndex / this.dim)
     let column = zeroIndex % this.dim
 
     if (column > 0) {
-      result[this.Actions.LEFT] = this.getNextState(this.Actions.LEFT)
+      result[this.Actions.LEFT] = this.getNextState(this.Actions.LEFT, state)
     }
     if (column < this.dim - 1) {
-      result[this.Actions.RIGHT] = this.getNextState(this.Actions.RIGHT)
+      result[this.Actions.RIGHT] = this.getNextState(this.Actions.RIGHT, state)
     }
     if (row > 0) {
-      result[this.Actions.UP] = this.getNextState(this.Actions.UP)
+      result[this.Actions.UP] = this.getNextState(this.Actions.UP, state)
     }
     if (row < this.dim - 1) {
-      result[this.Actions.DOWN] = this.getNextState(this.Actions.DOWN)
+      result[this.Actions.DOWN] = this.getNextState(this.Actions.DOWN, state)
     }
 
     return result
   }
 
-  getNextState(action) {
-    let zeroIndex = this.state.indexOf('_')
+  getNextState(action, state) {
+    let zeroIndex = state.indexOf('_')
     let newIndex
 
     // TODO: Update untuk bisa dipake di 4x4
@@ -72,7 +74,7 @@ export default class Game {
         throw new Error('Unexpected action')
     }
 
-    let stateArr = this.state.slice()
+    let stateArr = state.slice()
     stateArr[zeroIndex] = stateArr[newIndex]
     stateArr[newIndex] = '_'
     return stateArr
