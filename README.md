@@ -14,8 +14,9 @@ Best path found
 - [x] Fix bug solver will be still running even there's no car
 - [x] Add randomize which place several cars in random location
 - [x] Place cars in their supposed place based on exit time
-- [ ] Optimize randomize function
-- [ ] Implement search function to the UI after designated path found
+- [x] Optimize randomize function
+- [ ] From path move cars
+- [ ] Implement puzzle parking
 
 # Contact developer
 

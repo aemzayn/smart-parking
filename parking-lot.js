@@ -282,7 +282,8 @@ export default class ParkingLot {
       }
     })
 
-    const numOfCars = this.width - 1
+    // const numOfCars = this.width - 1
+    const numOfCars = this.getCarNumberFromPrompt()
     const carKeys = []
 
     // Generate random car positions
@@ -474,7 +475,9 @@ export default class ParkingLot {
         current = current.parent
       }
 
-      path.reverse().forEach((n) => n.visualize())
+      path.reverse().forEach((n) => {
+        console.log(n)
+      })
       console.log('Solution found!')
       console.log('Iteration: ', options.iteration)
       console.log('Depth: ', path.length - 1)
@@ -793,4 +796,12 @@ export default class ParkingLot {
   async placePuzzle() {}
 
   async solvePuzzle() {}
+
+  getCarNumberFromPrompt(message = 'How many cars?') {
+    const totalCar = parseInt(prompt(message) || this.width - 1)
+    if (totalCar <= 0 || totalCar > Math.pow(this.width, 2)) {
+      this.getCarNumberFromPrompt('Invalid number')
+    }
+    return totalCar
+  }
 }
