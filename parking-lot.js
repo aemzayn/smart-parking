@@ -24,8 +24,10 @@ export default class ParkingLot {
     this.isPuzzleSystem = false
     this.carExitTimeInfoEl = document.querySelector('.car-info')
     this.carLocationInfoEl = document.querySelector('.car-location')
-    this.goalState = []
+    this.traditionalPlaceState = []
     this.initialState = []
+    this.puzzlePlaceState = []
+    this.puzzleExitGoalState = []
 
     // maximum capacity of traditional parking
     this.maxTraditionalCap = 7
@@ -94,11 +96,11 @@ export default class ParkingLot {
 
     // place randomly generated cars to supposed place based on exit time
     this.placeCarsBtn.addEventListener('click', () => {
-      this.placeCarsBtn.disabled = true
-      this.placeCarsBtn.innerText = 'Loading...'
       if (this.isPuzzleSystem) {
         this.placePuzzle()
       } else {
+        this.placeCarsBtn.disabled = true
+        this.placeCarsBtn.innerText = 'Loading...'
         this.placeTraditional()
       }
     })
@@ -208,6 +210,9 @@ export default class ParkingLot {
     this.targetKey = `${width - 1}x0`
 
     switch (width) {
+      case 3:
+        this.maxTraditionalCap = 5
+        break
       case 4:
         this.maxTraditionalCap = 7
         break
@@ -291,7 +296,7 @@ export default class ParkingLot {
     this.childEl.forEach((el) => {
       if (el.children.length > 0) {
         for (const child of el.children) {
-          child.remove()
+          child.remove() // delete all car images
         }
       }
     })
@@ -313,10 +318,15 @@ export default class ParkingLot {
       const id = i === 0 ? 'T' : 'X'
       this.board = this.modify2DArray(this.board, row, col, id)
       const node = new Node(id, row, col)
+      while (cars.find((n) => n.exitTime === node.exitTime)) {
+        node.exitTime = node.assignExitTime()
+      }
       cars.push(node)
     })
 
-    const randomizedCarsPosition = this.getRandomizedInitialState(cars)
+    const randomizedCarsPosition = this.getRandomizedInitialStateTraditional(
+      cars.slice(0)
+    )
 
     randomizedCarsPosition.forEach((val, index) => {
       const isCar = typeof val === 'number'
@@ -429,25 +439,9 @@ export default class ParkingLot {
     let result = array.slice()
     let i = 1
     const alphabets = []
+    let moverPlaced = false
     for (let row = 0; row < result.length; row++) {
       for (let col = 0; col < result[row].length; col++) {
-        if (row === result.length - 1 && col === 0) {
-          result = this.modify2DArray(result, row, col, '_')
-          continue
-        }
-
-        if (
-          !result[row][col] ||
-          (typeof result[row][col] === 'object' &&
-            result[row][col].exitTime === 0)
-        ) {
-          const alphabet = ((i % 26) + 9).toString(36).repeat(Math.ceil(i / 26))
-          alphabets.push(alphabet)
-          result = this.modify2DArray(result, row, col, alphabet)
-          i++
-          continue
-        }
-
         if (typeof result[row][col] === 'object') {
           result = this.modify2DArray(
             result,
@@ -455,15 +449,29 @@ export default class ParkingLot {
             col,
             result[row][col].exitTime
           )
+        } else {
+          if (!moverPlaced) {
+            result = this.modify2DArray(result, row, col, '_')
+            moverPlaced = true
+          } else {
+            const alphabet = ((i % 26) + 9)
+              .toString(36)
+              .repeat(Math.ceil(i / 26))
+            alphabets.push(alphabet)
+            result = this.modify2DArray(result, row, col, alphabet)
+            i++
+          }
         }
       }
     }
+
     const ret = []
     if (flat) {
       ret.push(result.flat())
     } else {
       ret.push(result)
     }
+
     if (returnSet) ret.push(alphabets)
     return ret.length === 1 ? ret[0] : ret
   }
@@ -573,37 +581,24 @@ export default class ParkingLot {
   }
 
   /**
-   * Check if puzzle is solvable
-   * @param {Array<string | number>} state
-   * @param {Array<string | number>} target
-   * @returns {boolean}
-   */
-  isSolvable(state, target) {
-    const inversions = {}
-    for (let i = 0; i < target.length; i++) {
-      inversions[target[i]] = 0
-      for (let j = 0; j < target.length; j++) {
-        // if
-      }
-    }
-  }
-
-  /**
    * Find solution for traditional parking and returns shuffled array
    * @param {Array<Node>} cars List of cars
    * @returns {Array<string | number>} Shuffled array
    */
-  getRandomizedInitialState(cars) {
+  getRandomizedInitialStateTraditional(cars) {
     // random place cars put in board
-    const carsByExitTime = cars.slice().sort((a, b) => {
+    const carsByExitTime = cars.sort((a, b) => {
       if (a.exitTime < b.exitTime) return -1
       else if (a.exitTime > b.exitTime) return 1
       else return 0
     })
 
-    const goal = this.create2dArray(this.width)
+    let traditionalInitialState = this.create2dArray(this.width)
+    let puzzlePlaceGoal = this.create2dArray(this.width)
+    let puzzleExitGoal = this.create2dArray(this.width)
+    let otherCars = carsByExitTime.filter((n) => n.type === TYPES.OTHER_CARS)
+    const targetCar = carsByExitTime.find((n) => n.type === TYPES.TARGET_CAR)
 
-    const frontier = []
     const width = this.width
 
     const columnCars = []
@@ -613,7 +608,37 @@ export default class ParkingLot {
       c -= 2
     }
 
-    // Place cars
+    // Goal state for puzzle
+    const carsPuzzle = carsByExitTime.slice(0)
+    for (let col = this.width - 1; col >= 0; col--) {
+      for (let row = 0; row < this.width; row++) {
+        if (carsPuzzle.length > 0) {
+          const current = carsPuzzle.pop()
+          puzzlePlaceGoal = this.modify2DArray(
+            puzzlePlaceGoal,
+            row,
+            col,
+            current
+          )
+        }
+
+        // Exit state for puzzle
+        if (otherCars.length > 0) {
+          const current = otherCars.pop()
+          puzzleExitGoal = this.modify2DArray(puzzleExitGoal, row, col, current)
+        }
+      }
+    }
+
+    // Place target car in exit cell in puzzle system
+    puzzleExitGoal = this.modify2DArray(
+      puzzleExitGoal,
+      this.width - 1,
+      0,
+      targetCar
+    )
+
+    // Place cars in target state of traditional state
     for (let col = width - 1; col >= 0; col -= 2) {
       for (let row = 0; row < width; row++) {
         // don't place cars in bottom row except bottom right corner
@@ -622,9 +647,7 @@ export default class ParkingLot {
         // while there's car place it
         if (carsByExitTime.length > 0) {
           const current = carsByExitTime.pop()
-          const targetKey = `${row}x${col}`
-          if (current.key !== targetKey) frontier.push(current)
-          goal[row][col] = current
+          traditionalInitialState[row][col] = current
         } else {
           break
         }
@@ -632,36 +655,23 @@ export default class ParkingLot {
     }
 
     // from board find find best place
-    const goalState = this.fill2dArray(goal, true)
-    this.goalState = goalState
+    const goalState = this.fill2dArray(traditionalInitialState, true)
+
+    this.traditionalPlaceState = goalState
+    this.puzzleExitGoalState = this.fill2dArray(puzzleExitGoal, true)
+    this.puzzlePlaceState = this.fill2dArray(puzzlePlaceGoal, true)
 
     // shuffle
-    const states = {}
-    states[goalState.join('')] = true
-    const g = new Game({ state: goalState, dim: this.width })
+    const randomizeState = this.shuffleState(goalState)
+    const randomizePuzzle = this.shuffleState(this.puzzlePlaceState)
 
-    const randomNextState = (state) => {
-      const choices = Object.values(g.getAvailableActionsAndStates(state))
-      const randomIndex = Math.floor(Math.random() * choices.length)
-      const randomState = choices[randomIndex]
-      const carInBottomLeftCorner =
-        typeof randomState[randomState.length - this.width] === 'number'
-      if (states[randomState.join('')] || carInBottomLeftCorner)
-        return randomNextState(randomState)
-      return randomState
+    if (this.isPuzzleSystem) {
+      this.initialState = randomizePuzzle
+      return randomizePuzzle
+    } else {
+      this.initialState = randomizeState
+      return randomizeState
     }
-
-    const iteration = 100
-    let randomizeState = randomNextState(goalState)
-    let i = 1
-
-    while (i < iteration) {
-      randomizeState = randomNextState(randomizeState)
-      i++
-    }
-
-    this.initialState = randomizeState
-    return randomizeState
   }
 
   visualize(state, label = null) {
@@ -676,47 +686,8 @@ export default class ParkingLot {
   }
 
   async placeTraditional() {
-    const carsByExitTime = this.filterCell(this.cells).sort((a, b) => {
-      if (a.exitTime < b.exitTime) return -1
-      else if (a.exitTime > b.exitTime) return 1
-      else return 0
-    })
-
-    const carsTarget = {}
-    const goal = this.create2dArray(this.width)
-
-    const frontier = []
-    const width = this.width
-
-    const columnCars = []
-    let c = this.width - 1
-    while (c >= 0) {
-      columnCars.push(c)
-      c -= 2
-    }
-
-    // Place cars
-    for (let col = width - 1; col >= 0; col -= 2) {
-      for (let row = 0; row < width; row++) {
-        // don't place cars in bottom row except bottom right corner
-        if (col < width - 1 && row === width - 1) continue
-
-        // while there's car place it
-        if (carsByExitTime.length > 0) {
-          const current = carsByExitTime.pop()
-          const currentKey = current.key
-          const targetKey = `${row}x${col}`
-          if (current.key !== targetKey) frontier.push(current)
-          carsTarget[currentKey] = targetKey
-          goal[row][col] = current
-        } else {
-          break
-        }
-      }
-    }
-
     const initialState = this.initialState
-    const goalState = this.goalState
+    const goalState = this.traditionalPlaceState
 
     const dim = this.width
 
@@ -918,9 +889,82 @@ export default class ParkingLot {
   }
 
   async placePuzzle() {
-    this.placeCarsBtn.disabled = false
-    this.placeCarsBtn.innerText = 'Place'
+    console.log(this.puzzlePlaceState)
+    // this.placeCarsBtn.disabled = false
+    // this.placeCarsBtn.innerText = 'Place'
+    // const carsByExitTime = this.sortCarsByExitTime()
+    // const otherCars = carsByExitTime.filter((n) => n.type === TYPES.OTHER_CARS)
+
+    // // place cars
+    // let goalState = this.create2dArray(this.width)
+    // let exitGoalState = this.create2dArray(this.width)
+    // const targetCar = carsByExitTime.find((n) => n.type === TYPES.TARGET_CAR)
+
+    // for (let col = this.width - 1; col >= 0; col--) {
+    //   for (let row = 0; row < this.width; row++) {
+    //     if (carsByExitTime.length > 0) {
+    //       const current = carsByExitTime.pop()
+    //       goalState = this.modify2DArray(goalState, row, col, current.exitTime)
+    //     }
+
+    //     if (otherCars.length > 0) {
+    //       const current = otherCars.pop()
+    //       exitGoalState = this.modify2DArray(
+    //         exitGoalState,
+    //         row,
+    //         col,
+    //         current.exitTime
+    //       )
+    //     }
+    //   }
+    // }
+
+    // exitGoalState = this.modify2DArray(
+    //   exitGoalState,
+    //   this.width - 1,
+    //   0,
+    //   targetCar.exitTime
+    // )
+
+    // console.log(goalState)
+    // console.log(exitGoalState)
+  }
+
+  sortCarsByExitTime() {
+    return this.filterCell(this.cells).sort((a, b) => {
+      if (a.exitTime < b.exitTime) return -1
+      else if (a.exitTime > b.exitTime) return 1
+      else return 0
+    })
   }
 
   async solvePuzzle() {}
+
+  shuffleState(initialState) {
+    const states = {}
+    states[initialState.join('')] = true
+    const g = new Game({ state: initialState, dim: this.width })
+
+    const randomNextState = (state) => {
+      const choices = Object.values(g.getAvailableActionsAndStates(state))
+      const randomIndex = Math.floor(Math.random() * choices.length)
+      const randomState = choices[randomIndex]
+      const carInBottomLeftCorner =
+        typeof randomState[randomState.length - this.width] === 'number'
+      if (states[randomState.join('')] || carInBottomLeftCorner)
+        return randomNextState(randomState)
+      return randomState
+    }
+
+    const iteration = 100
+    let randomizeState = randomNextState(initialState)
+    let i = 1
+
+    while (i < iteration) {
+      randomizeState = randomNextState(randomizeState)
+      i++
+    }
+
+    return randomizeState
+  }
 }
