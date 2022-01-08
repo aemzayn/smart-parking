@@ -39,6 +39,10 @@ export const search = (opt) => {
     ...opt,
   }
 
+  if (options.iteration % 500 === 0) {
+    console.log('Iteration: ', options.iteration)
+  }
+
   // options.node.visualize()
 
   if (options.node.game.isFinished()) {

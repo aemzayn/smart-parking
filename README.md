@@ -15,8 +15,10 @@ Best path found
 - [x] Add randomize which place several cars in random location
 - [x] Place cars in their supposed place based on exit time
 - [x] Optimize randomize function
-- [ ] From path move cars
-- [ ] Implement puzzle parking
+- [x] From path move cars
+- [x] Implement puzzle place
+- [ ] Update cars cell position after moving
+- [ ] Puzzle exit
 
 # Contact developer
 

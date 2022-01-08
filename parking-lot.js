@@ -688,97 +688,7 @@ export default class ParkingLot {
   async placeTraditional() {
     const initialState = this.initialState
     const goalState = this.traditionalPlaceState
-
-    const dim = this.width
-
-    const game = new Game({
-      state: initialState,
-      goalState,
-      dim,
-    })
-
-    const initialNode = new Node2(
-      {
-        state: game.state,
-        dim,
-      },
-      goalState
-    )
-
-    console.log('Solving...')
-
-    search({
-      node: initialNode,
-      iterationLimit: 10000,
-      depthLimit: 0,
-      callback: async (err, options) => {
-        if (err) {
-          console.error(err)
-          return
-        }
-
-        this.placeCarsBtn.disabled = false
-        this.placeCarsBtn.innerText = 'Place'
-
-        const { moves, depth, iteration } = this.searchCallback(options)
-
-        this.depthInfo.innerText = depth
-        this.iterationInfo.innerText = iteration
-
-        document.querySelectorAll('#parking-lot img').forEach((img) => {
-          img.classList.add('moving')
-        })
-
-        const imgEl = {}
-
-        let frontier = moves.slice(0).reverse() // reverse because pop remove from the last element
-        while (frontier.length !== 0) {
-          const move = frontier.pop()
-          const { from, id } = move
-
-          let imgSelector
-
-          if (imgEl.hasOwnProperty(id)) {
-            imgSelector = imgEl[id].selector
-          } else {
-            imgSelector = `[data-row="${from[0]}"][data-col="${from[1]}"] img`
-            imgEl[id] = { selector: imgSelector, x: 0, y: 0 }
-          }
-
-          let x = imgEl[id].x
-          let y = imgEl[id].y
-
-          switch (move.direction) {
-            case 'up':
-              y -= 100
-              break
-            case 'down':
-              y += 100
-              break
-            case 'left':
-              x -= 100
-              break
-            case 'right':
-              x += 100
-              break
-            default:
-              throw new Error(`Unrecognized direction: ${move.direction}`)
-          }
-
-          gsap.to(imgSelector, {
-            duration: 0.5,
-            y: `${y}%`,
-            x: `${x}%`,
-            ease: 'sine.inOut',
-          })
-
-          imgEl[id].x = x
-          imgEl[id].y = y
-
-          await sleep(0.5)
-        }
-      },
-    })
+    this.search(initialState, goalState)
   }
 
   /**
@@ -889,45 +799,102 @@ export default class ParkingLot {
   }
 
   async placePuzzle() {
-    console.log(this.puzzlePlaceState)
-    // this.placeCarsBtn.disabled = false
-    // this.placeCarsBtn.innerText = 'Place'
-    // const carsByExitTime = this.sortCarsByExitTime()
-    // const otherCars = carsByExitTime.filter((n) => n.type === TYPES.OTHER_CARS)
+    const initialState = this.initialState
+    const goalState = this.puzzlePlaceState
+    this.search(initialState, goalState)
+  }
 
-    // // place cars
-    // let goalState = this.create2dArray(this.width)
-    // let exitGoalState = this.create2dArray(this.width)
-    // const targetCar = carsByExitTime.find((n) => n.type === TYPES.TARGET_CAR)
+  async search(initialState, goalState) {
+    const dim = this.width
 
-    // for (let col = this.width - 1; col >= 0; col--) {
-    //   for (let row = 0; row < this.width; row++) {
-    //     if (carsByExitTime.length > 0) {
-    //       const current = carsByExitTime.pop()
-    //       goalState = this.modify2DArray(goalState, row, col, current.exitTime)
-    //     }
+    const game = new Game({
+      state: initialState,
+      goalState,
+      dim,
+    })
 
-    //     if (otherCars.length > 0) {
-    //       const current = otherCars.pop()
-    //       exitGoalState = this.modify2DArray(
-    //         exitGoalState,
-    //         row,
-    //         col,
-    //         current.exitTime
-    //       )
-    //     }
-    //   }
-    // }
+    const initialNode = new Node2(
+      {
+        state: game.state,
+        dim,
+      },
+      goalState
+    )
 
-    // exitGoalState = this.modify2DArray(
-    //   exitGoalState,
-    //   this.width - 1,
-    //   0,
-    //   targetCar.exitTime
-    // )
+    console.log('Solving...')
 
-    // console.log(goalState)
-    // console.log(exitGoalState)
+    search({
+      node: initialNode,
+      iterationLimit: 100000,
+      depthLimit: 0,
+      callback: async (err, options) => {
+        if (err) {
+          console.error(err)
+          return
+        }
+
+        this.placeCarsBtn.disabled = false
+        this.placeCarsBtn.innerText = 'Place'
+
+        const { moves, depth, iteration } = this.searchCallback(options)
+
+        this.depthInfo.innerText = depth
+        this.iterationInfo.innerText = iteration
+
+        document.querySelectorAll('#parking-lot img').forEach((img) => {
+          img.classList.add('moving')
+        })
+
+        const imgEl = {}
+
+        let frontier = moves.slice(0).reverse() // reverse because pop remove from the last element
+        while (frontier.length !== 0) {
+          const move = frontier.pop()
+          const { from, id } = move
+
+          let imgSelector
+
+          if (imgEl.hasOwnProperty(id)) {
+            imgSelector = imgEl[id].selector
+          } else {
+            imgSelector = `[data-row="${from[0]}"][data-col="${from[1]}"] img`
+            imgEl[id] = { selector: imgSelector, x: 0, y: 0 }
+          }
+
+          let x = imgEl[id].x
+          let y = imgEl[id].y
+
+          switch (move.direction) {
+            case 'up':
+              y -= 100
+              break
+            case 'down':
+              y += 100
+              break
+            case 'left':
+              x -= 100
+              break
+            case 'right':
+              x += 100
+              break
+            default:
+              throw new Error(`Unrecognized direction: ${move.direction}`)
+          }
+
+          gsap.to(imgSelector, {
+            duration: 0.5,
+            y: `${y}%`,
+            x: `${x}%`,
+            ease: 'sine.inOut',
+          })
+
+          imgEl[id].x = x
+          imgEl[id].y = y
+
+          await sleep(0.5)
+        }
+      },
+    })
   }
 
   sortCarsByExitTime() {
