@@ -45,7 +45,7 @@ p {
 
 .controller {
   padding: 2rem;
-  width: 20vw;
+  width: 25vw;
   min-width: 250px;
   max-width: 400px;
   padding-top: 1rem;
@@ -140,7 +140,7 @@ main {
   position: absolute;
   width: 20%;
   height: 20%;
-  bottom: -12.5%;
+  bottom: -11.2%;
   left: 50%;
   border-radius: 50px;
   transform: translateX(-50%);
@@ -152,7 +152,7 @@ main {
 }
 
 .parking-lot > div:hover {
-  background-color: var(--button);
+  /* background-color: var(--button); */
 }
 
 .parking-lot > div.occupied {
@@ -171,6 +171,13 @@ main {
   width: 100%;
 }
 
+.parking-lot > div img.moving {
+  position: absolute;
+  z-index: 2;
+  transition: all 500ms ease-in-out;
+  transform: translate(0, 0);
+}
+
 .sizes-button div {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -187,4 +194,14 @@ main {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+.car-number-container {
+}
+
+.car-number-container input {
+  padding: 0.5rem 1.25rem;
+  border: none;
+  border: 2px solid gray;
+  border-radius: 3px;
 }

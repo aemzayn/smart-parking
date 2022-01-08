@@ -14,6 +14,10 @@ export function getSpeed() {
   return speed / 1000
 }
 
+/**
+ * @param {number} secs
+ * @returns {Promise<any>}
+ */
 export function sleep(secs) {
   return new Promise((resolve) => {
     setTimeout(resolve, secs * speed)

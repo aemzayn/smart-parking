@@ -56,7 +56,6 @@ export default class Game {
     let zeroIndex = state.indexOf('_')
     let newIndex
 
-    // TODO: Update untuk bisa dipake di 4x4
     switch (action) {
       case this.Actions.LEFT:
         newIndex = zeroIndex - 1

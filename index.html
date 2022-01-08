@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="style.css" />
     <link rel="favicon" href="assets/favicon.ico" type="image/x-icon" />
-    <script src="script.js" type="module"></script>
     <title>Simulation</title>
   </head>
   <body>
@@ -21,8 +20,20 @@
             <button id="reset" class="reset" onclick="location.reload()">
               Reset
             </button>
-            <button id="randomize">Randomize</button>
             <button id="place">Place</button>
+          </div>
+        </section>
+
+        <section class="car-number-container">
+          <p>Randomize</p>
+          <div class="grid">
+            <input
+              type="number"
+              id="car-number"
+              placeholder="Number of car"
+              min="1"
+            />
+            <button id="randomize">Randomize</button>
           </div>
         </section>
 
@@ -67,12 +78,26 @@
           <p>Car info</p>
           <div class="car-information">
             <p>
-              Location
+              Cell
               <span class="car-location">null</span>
             </p>
             <p>
               Exit time
               <span class="car-info">null</span>
+            </p>
+          </div>
+        </section>
+
+        <section>
+          <p>Search info</p>
+          <div class="car-information">
+            <p>
+              Depth
+              <span class="depth">0</span>
+            </p>
+            <p>
+              Iteration
+              <span class="iteration">0</span>
             </p>
           </div>
         </section>
@@ -98,5 +123,8 @@
         </div>
       </main>
     </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <script src="script.js" type="module"></script>
   </body>
 </html>

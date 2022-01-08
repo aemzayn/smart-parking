@@ -50,6 +50,9 @@ export default class ParkingLot {
     this.systemInfo = document.querySelector('#system span')
     this.sizeBtns = document.querySelectorAll('.sizes-button')
     this.sizeInfo = document.getElementById('size-info')
+    this.carNumberInput = document.getElementById('car-number')
+    this.depthInfo = document.querySelector('.depth')
+    this.iterationInfo = document.querySelector('.iteration')
 
     /* ---- Place the cars nodes ---- */
     this.randomize()
@@ -91,6 +94,8 @@ export default class ParkingLot {
 
     // place randomly generated cars to supposed place based on exit time
     this.placeCarsBtn.addEventListener('click', () => {
+      this.placeCarsBtn.disabled = true
+      this.placeCarsBtn.innerText = 'Loading...'
       if (this.isPuzzleSystem) {
         this.placePuzzle()
       } else {
@@ -271,6 +276,15 @@ export default class ParkingLot {
 
   /** Put random cars in random position */
   randomize() {
+    const numOfCars = parseInt(this.carNumberInput.value) || this.width - 1
+    const carKeys = []
+
+    if (numOfCars > Math.pow(this.width, 2) - 1) {
+      alert(`Maximum number of cars is : ${Math.pow(this.width, 2) - 1}`)
+      this.carNumberInput.value = this.width - 1
+      return
+    }
+
     // empty the boards
     this.resetArrays()
     this.isTargetPlaced = false
@@ -281,10 +295,6 @@ export default class ParkingLot {
         }
       }
     })
-
-    // const numOfCars = this.width - 1
-    const numOfCars = this.getCarNumberFromPrompt()
-    const carKeys = []
 
     // Generate random car positions
     while (carKeys.length < numOfCars) {
@@ -324,9 +334,7 @@ export default class ParkingLot {
     this.cells.forEach((rows, row) => {
       rows.forEach((node, col) => {
         // add car
-        // console.log(node.type);
         if (CARS.includes(node.type)) {
-          console.log(node)
           const el = this.getElementByRowCol(row, col)
           const car = this.createCarInRowCol(row, col)
           if (car) {
@@ -462,25 +470,75 @@ export default class ParkingLot {
 
   /**
    * Search callback for A* algorithm
-   * @param {Error} err
    * @param {Options} options
    */
-  searchCallback(err, options) {
-    if (err) console.error(err)
-    else {
-      const path = []
-      let current = options.node
-      while (current) {
-        path.push(current)
-        current = current.parent
+  searchCallback(options) {
+    console.log('Solution found!')
+    const getRowCol = (state, dim) => {
+      if (!state) return []
+      const zeroIndex = state.indexOf('_')
+      return [Math.floor(zeroIndex / dim), zeroIndex % dim]
+    }
+
+    /** @type {Array<Node2>} */
+    const path = []
+    let current = options.node
+
+    while (current) {
+      path.push(current)
+      current = current.parent
+    }
+
+    /** @type {Array<{id: string | number, from: Array<number>, to: Array<number>, direction: string}}> } */
+    const movesCoordinate = path.reverse().reduce((prev, current, id, arr) => {
+      if (id + 1 === arr.length) return prev
+
+      const nextState = arr[id + 1]
+      const nextStateIndex = nextState.state.indexOf('_')
+      const carId = current.state[nextStateIndex]
+      const [cRow, cCol] = getRowCol(current.state, current.dim) // current coordinate
+      const [nRow, nCol] = getRowCol(nextState.state, current.dim) // next coordinate
+      let action, carMoves
+
+      if (cRow > nRow) {
+        action = 'up'
+        carMoves = 'down'
+      }
+      if (cRow < nRow) {
+        action = 'down'
+        carMoves = 'up'
+      }
+      if (cCol > nCol) {
+        action = 'left'
+        carMoves = 'right'
+      }
+      if (cCol < nCol) {
+        action = 'right'
+        carMoves = 'left'
       }
 
-      path.reverse().forEach((n) => {
-        console.log(n)
-      })
-      console.log('Solution found!')
-      console.log('Iteration: ', options.iteration)
-      console.log('Depth: ', path.length - 1)
+      return [
+        ...prev,
+        {
+          id: carId,
+          to: [cRow, cCol],
+          from: [nRow, nCol],
+          direction: carMoves,
+        },
+      ]
+    }, [])
+
+    const moves = movesCoordinate.filter((move) => typeof move.id === 'number')
+
+    path.reverse().forEach((node) => {
+      // node.visualize()
+    })
+
+    return {
+      moves,
+      iteration: options.iteration,
+      depth: path.length - 1,
+      path,
     }
   }
 
@@ -682,7 +740,73 @@ export default class ParkingLot {
       node: initialNode,
       iterationLimit: 10000,
       depthLimit: 0,
-      callback: this.searchCallback,
+      callback: async (err, options) => {
+        if (err) {
+          console.error(err)
+          return
+        }
+
+        this.placeCarsBtn.disabled = false
+        this.placeCarsBtn.innerText = 'Place'
+
+        const { moves, depth, iteration } = this.searchCallback(options)
+
+        this.depthInfo.innerText = depth
+        this.iterationInfo.innerText = iteration
+
+        document.querySelectorAll('#parking-lot img').forEach((img) => {
+          img.classList.add('moving')
+        })
+
+        const imgEl = {}
+
+        let frontier = moves.slice(0).reverse() // reverse because pop remove from the last element
+        while (frontier.length !== 0) {
+          const move = frontier.pop()
+          const { from, id } = move
+
+          let imgSelector
+
+          if (imgEl.hasOwnProperty(id)) {
+            imgSelector = imgEl[id].selector
+          } else {
+            imgSelector = `[data-row="${from[0]}"][data-col="${from[1]}"] img`
+            imgEl[id] = { selector: imgSelector, x: 0, y: 0 }
+          }
+
+          let x = imgEl[id].x
+          let y = imgEl[id].y
+
+          switch (move.direction) {
+            case 'up':
+              y -= 100
+              break
+            case 'down':
+              y += 100
+              break
+            case 'left':
+              x -= 100
+              break
+            case 'right':
+              x += 100
+              break
+            default:
+              throw new Error(`Unrecognized direction: ${move.direction}`)
+          }
+
+          gsap.to(imgSelector, {
+            duration: 0.5,
+            y: `${y}%`,
+            x: `${x}%`,
+            ease: 'sine.inOut',
+          })
+
+          imgEl[id].x = x
+          imgEl[id].y = y
+
+          await sleep(0.5)
+        }
+      },
     })
   }
 
@@ -793,15 +917,10 @@ export default class ParkingLot {
     this.nodeInfoEl.innerText = `Nodes explored: ${exploredNodes}`
   }
 
-  async placePuzzle() {}
+  async placePuzzle() {
+    this.placeCarsBtn.disabled = false
+    this.placeCarsBtn.innerText = 'Place'
+  }
 
   async solvePuzzle() {}
-
-  getCarNumberFromPrompt(message = 'How many cars?') {
-    const totalCar = parseInt(prompt(message) || this.width - 1)
-    if (totalCar <= 0 || totalCar > Math.pow(this.width, 2)) {
-      this.getCarNumberFromPrompt('Invalid number')
-    }
-    return totalCar
-  }
 }
