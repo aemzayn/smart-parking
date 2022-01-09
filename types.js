@@ -4,4 +4,9 @@ const TYPES = {
   OPEN_SPACE: 'O',
 }
 
+export const SOURCES = {
+  T: './images/red-car.png',
+  X: './images/blue-car.png',
+}
+
 export default TYPES

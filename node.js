@@ -22,6 +22,9 @@ export default class Node {
     return this.key === other.key
   }
 
+  /**
+   * @returns {Element}
+   */
   getElementFromRowCol() {
     return document.querySelector(
       `[data-row="${this.row}"][data-col="${this.col}"]`

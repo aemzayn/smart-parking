@@ -6,7 +6,7 @@ const resetBtn = document.getElementById('reset')
 const speedBtns = document.querySelectorAll('button.speed')
 
 let running = false
-let speed = 1000
+let speed = 500
 let hour = 0
 let minute = 0
 
@@ -31,7 +31,7 @@ export function pause() {
 export function reset() {
   running = false
   startBtn.innerText = 'Start'
-  speed = 1000
+  speed = 500
   hour = 0
   minute = 0
   let time = `${hour < 10 ? `0${hour}` : hour}:${

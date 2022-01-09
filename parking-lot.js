@@ -1,6 +1,6 @@
 import PriorityQueue from './priority-queue.js'
 import Node from './node.js'
-import TYPES from './types.js'
+import TYPES, { SOURCES } from './types.js'
 import { pause, sleep } from './clock.js'
 import Game from './game.js'
 import { search } from './search.js'
@@ -19,11 +19,8 @@ export default class ParkingLot {
     this.startKey = ''
     this.targetKey = '2x0'
     this.startPos = { row: -1, col: -1 }
-    this.nodeInfoEl = document.getElementById('node-info')
     this.width = 3
     this.isPuzzleSystem = false
-    this.carExitTimeInfoEl = document.querySelector('.car-info')
-    this.carLocationInfoEl = document.querySelector('.car-location')
     this.traditionalPlaceState = []
     this.initialState = []
     this.puzzlePlaceState = []
@@ -44,6 +41,8 @@ export default class ParkingLot {
     /* ---- DOM Elements ---- */
     this.root = document.getElementById('parking-lot')
     this.childEl = Array.from(this.root.children)
+    this.carExitTimeInfoEl = document.querySelector('.car-info')
+    this.carLocationInfoEl = document.querySelector('.car-location')
     this.startBtn = document.getElementById('start-pause')
     this.checkbox = document.getElementById('checkbox')
     this.randomizeBtn = document.getElementById('randomize')
@@ -55,6 +54,8 @@ export default class ParkingLot {
     this.carNumberInput = document.getElementById('car-number')
     this.depthInfo = document.querySelector('.depth')
     this.iterationInfo = document.querySelector('.iteration')
+    this.nodeInfoEl = document.getElementById('node-info')
+    this.pathInfo = document.getElementById('path-info')
 
     /* ---- Place the cars nodes ---- */
     this.randomize()
@@ -538,7 +539,7 @@ export default class ParkingLot {
 
     const moves = movesCoordinate.filter((move) => typeof move.id === 'number')
 
-    path.reverse().forEach((node) => {
+    path.forEach((node) => {
       // node.visualize()
     })
 
@@ -796,6 +797,7 @@ export default class ParkingLot {
 
     const exploredNodes = Object.keys(parentForCell).length
     this.nodeInfoEl.innerText = `Nodes explored: ${exploredNodes}`
+    this.pathInfo.innerText = `Path Length: ${path.length}`
   }
 
   async placePuzzle() {
@@ -806,7 +808,6 @@ export default class ParkingLot {
 
   async search(initialState, goalState) {
     const dim = this.width
-
     const game = new Game({
       state: initialState,
       goalState,
@@ -846,11 +847,15 @@ export default class ParkingLot {
         })
 
         const imgEl = {}
+        const posInspector = {}
+        let isAllAnimationEnded = false
 
         let frontier = moves.slice(0).reverse() // reverse because pop remove from the last element
+        const carNodes = this.cells.flat().filter((n) => n.exitTime)
+
         while (frontier.length !== 0) {
           const move = frontier.pop()
-          const { from, id } = move
+          const { from, to, id } = move
 
           let imgSelector
 
@@ -859,6 +864,20 @@ export default class ParkingLot {
           } else {
             imgSelector = `[data-row="${from[0]}"][data-col="${from[1]}"] img`
             imgEl[id] = { selector: imgSelector, x: 0, y: 0 }
+          }
+
+          if (posInspector.hasOwnProperty(id)) {
+            posInspector[id] = {
+              ...posInspector[id],
+              finalPos: to,
+            }
+          } else {
+            posInspector[id] = {
+              id: id,
+              startPos: from,
+              finalPos: to,
+              node: carNodes.find((n) => n.exitTime === +id),
+            }
           }
 
           let x = imgEl[id].x
@@ -886,14 +905,68 @@ export default class ParkingLot {
             y: `${y}%`,
             x: `${x}%`,
             ease: 'sine.inOut',
+            onComplete: async () => {
+              if (frontier.length === 0) {
+                console.log('All animation finished')
+                isAllAnimationEnded = true
+                await sleep(1)
+                options.node.visualize()
+                this.resetCar(posInspector)
+              }
+            },
           })
 
           imgEl[id].x = x
           imgEl[id].y = y
 
           await sleep(0.5)
+
+          // final position visualize
         }
       },
+    })
+  }
+
+  /**
+   * @param {object} posInspector
+   */
+  resetCar(posInspector) {
+    console.log(posInspector)
+    this.board = this.create2dArray(this.width, TYPES.OPEN_SPACE)
+    const cars = Object.values(posInspector)
+
+    // for loop for removing all element
+    cars.forEach((car) => {
+      const [sRow, sCol] = car.startPos
+      const el = this.getElementByRowCol(sRow, sCol)
+      el.innerHTML = ''
+    })
+
+    // loop for appending elements
+    cars.forEach((car) => {
+      // const [sRow, sCol] = car.startPos
+      const [tRow, tCol] = car.finalPos
+      const targetEl = this.getElementByRowCol(tRow, tCol)
+      const node = car.node
+
+      const newKey = `${tRow}x${tCol}`
+      ;(node.row = tRow),
+        (node.col = tCol),
+        (node.el = targetEl),
+        (node.key = newKey)
+
+      const newEl = document.createElement('img')
+      newEl.src = SOURCES[node.type]
+
+      if (node.type === TYPES.TARGET_CAR) {
+        this.startKey = newKey
+        this.startPos = {
+          row: tRow,
+          col: tCol,
+        }
+      }
+
+      targetEl.appendChild(newEl)
     })
   }
 
