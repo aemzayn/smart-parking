@@ -25,6 +25,8 @@ export default class ParkingLot {
     this.initialState = []
     this.puzzlePlaceState = []
     this.puzzleExitGoalState = []
+    this.startTime = null
+    this.finishTime = null
 
     // maximum capacity of traditional parking
     this.maxTraditionalCap = 7
@@ -354,6 +356,10 @@ export default class ParkingLot {
         }
       })
     })
+
+    console.log('initial', this.initialState)
+    console.log('cells', this.cells)
+    console.log('T', this.startPos)
   }
 
   /**  Reset board, cells and cost into its default state based on width */
@@ -823,6 +829,7 @@ export default class ParkingLot {
     )
 
     console.log('Solving...')
+    this.startTime = new Date().toISOString()
 
     search({
       node: initialNode,
@@ -833,6 +840,7 @@ export default class ParkingLot {
           console.error(err)
           return
         }
+        this.finishTime = new Date().toISOString()
 
         this.placeCarsBtn.disabled = false
         this.placeCarsBtn.innerText = 'Place'
@@ -910,63 +918,66 @@ export default class ParkingLot {
                 console.log('All animation finished')
                 isAllAnimationEnded = true
                 await sleep(1)
-                options.node.visualize()
                 this.resetCar(posInspector)
               }
             },
           })
+          await sleep(1)
 
           imgEl[id].x = x
           imgEl[id].y = y
-
-          await sleep(0.5)
 
           // final position visualize
         }
       },
     })
+
+    console.log('Start time', this.startTime)
+    console.log('Finish time', this.finishTime)
   }
 
   /**
    * @param {object} posInspector
    */
   resetCar(posInspector) {
-    console.log(posInspector)
-    this.board = this.create2dArray(this.width, TYPES.OPEN_SPACE)
-    const cars = Object.values(posInspector)
+    const initialBoard = this.initialState
+    const finalBoard = this.isPuzzleSystem
+      ? this.puzzlePlaceState
+      : this.traditionalPlaceState
+    const cars = initialBoard.filter(Number)
 
-    // for loop for removing all element
-    cars.forEach((car) => {
-      const [sRow, sCol] = car.startPos
-      const el = this.getElementByRowCol(sRow, sCol)
-      el.innerHTML = ''
-    })
+    const getRowCol = (index) => {
+      return [Math.floor(index / this.width), index % this.width]
+    }
 
-    // loop for appending elements
+    console.log('initial', initialBoard)
+    console.log('final', finalBoard)
+    console.log('cars', cars)
+
+    // remove all images
+    this.childEl.forEach((c) => (c.innerHTML = ''))
+
     cars.forEach((car) => {
-      // const [sRow, sCol] = car.startPos
-      const [tRow, tCol] = car.finalPos
+      const initialIndex = initialBoard.indexOf(car)
+      const finalIndex = finalBoard.indexOf(car)
+      const [cRow, cCol] = getRowCol(initialIndex)
+      const [tRow, tCol] = getRowCol(finalIndex)
+
+      // get node element
+      const node = this.cells[cRow][cCol]
+      console.log(car, node, { cRow, cCol })
+      const type = node.type
+
+      // get element
+      const el = this.getElementByRowCol(cRow, cCol)
       const targetEl = this.getElementByRowCol(tRow, tCol)
-      const node = car.node
 
-      const newKey = `${tRow}x${tCol}`
-      ;(node.row = tRow),
-        (node.col = tCol),
-        (node.el = targetEl),
-        (node.key = newKey)
+      // create new image element
+      const imgEl = document.createElement('img')
+      imgEl.src = SOURCES[type]
 
-      const newEl = document.createElement('img')
-      newEl.src = SOURCES[node.type]
-
-      if (node.type === TYPES.TARGET_CAR) {
-        this.startKey = newKey
-        this.startPos = {
-          row: tRow,
-          col: tCol,
-        }
-      }
-
-      targetEl.appendChild(newEl)
+      // append the imgEl to the target el
+      targetEl.appendChild(imgEl)
     })
   }
 
