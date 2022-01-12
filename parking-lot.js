@@ -11,6 +11,11 @@ import Node2 from './node2.js'
  */
 
 const CARS = ['T', 'X']
+const SYS = {
+  traditional: 'traditional',
+  puzzle: 'puzzle',
+  'puzzle-retrieval': 'puzzle-retrieval',
+}
 
 export default class ParkingLot {
   constructor() {
@@ -20,7 +25,10 @@ export default class ParkingLot {
     this.targetKey = '2x0'
     this.startPos = { row: -1, col: -1 }
     this.width = 3
-    this.isPuzzleSystem = false
+    this.system =
+      window.localStorage.getItem('smart-parking-system') || SYS['puzzle']
+    this.isPuzzleSystem = true
+    this.isPuzzleRetrieval = false
     this.traditionalPlaceState = []
     this.initialState = []
     this.puzzlePlaceState = []
@@ -45,7 +53,7 @@ export default class ParkingLot {
     this.childEl = Array.from(this.root.children)
     this.carExitTimeInfoEl = document.querySelector('.car-info')
     this.carLocationInfoEl = document.querySelector('.car-location')
-    this.startBtn = document.getElementById('start-pause')
+    this.startBtn = document.getElementById('retrieve')
     this.checkbox = document.getElementById('checkbox')
     this.randomizeBtn = document.getElementById('randomize')
     this.placeCarsBtn = document.getElementById('place')
@@ -83,8 +91,8 @@ export default class ParkingLot {
 
     // Solve the exit car
     this.startBtn.addEventListener('click', () => {
-      if (this.isPuzzleSystem) {
-        this.solvePuzzle(this.startKey)
+      if (this.isPuzzle()) {
+        this.solvePuzzle()
       } else {
         this.solveTraditional(this.startKey, this.targetKey)
       }
@@ -99,7 +107,7 @@ export default class ParkingLot {
 
     // place randomly generated cars to supposed place based on exit time
     this.placeCarsBtn.addEventListener('click', () => {
-      if (this.isPuzzleSystem) {
+      if (this.isPuzzle()) {
         this.placePuzzle()
       } else {
         this.placeCarsBtn.disabled = true
@@ -109,15 +117,26 @@ export default class ParkingLot {
     })
   }
 
+  isPuzzle() {
+    return this.system === SYS.puzzle || this.system === SYS['puzzle-retrieval']
+  }
+
   /**
    * Change the system type
    * @param {Element} el HTML button element
    */
   changeSystemBtnEventListener(el) {
     const systemType = el.dataset.sys
-    const isPuzzleSystem = systemType === 'puzzle' ? true : false
-    this.isPuzzleSystem = isPuzzleSystem
-    this.systemInfo.innerText = isPuzzleSystem ? 'Puzzle' : 'Traditional'
+    const system = SYS[systemType]
+    const txt = system
+      .replace('-', ' ')
+      .replace(/\w{3,}/g, (match) =>
+        match.replace(/\w/, (m) => m.toUpperCase())
+      )
+
+    window.localStorage.setItem('smart-parking-system', system)
+    this.system = system
+    this.systemInfo.innerText = txt
   }
 
   /**
@@ -129,17 +148,23 @@ export default class ParkingLot {
     const col = Number(el.dataset.col)
     if (this.checkbox.checked) {
       // this.classList.toggle("clicked");
+      const node = new Node(TYPES.OPEN_SPACE, row, col)
+      let cost = 0
 
       if (el.children && el.children.length > 0) {
         // if there's already a car remove it
-        this.cost = this.modify2DArray(this.cost, row, col, 1)
         this.removeCarEventListener(el, row, col)
       } else {
         // add car
-        let car = this.createCarInRowCol(row, col, true)
-        if (car) el.appendChild(car)
-        this.cost = this.modify2DArray(this.cost, row, col, 2)
+        node.type = !this.isTargetPlaced ? TYPES.TARGET_CAR : TYPES.OTHER_CARS
+        node.exitTime = node.assignExitTime()
+        this.createCarInRowCol(node)
       }
+
+      const type = node.type
+      this.cost = this.modify2DArray(this.cost, row, col, cost)
+      this.cells = this.modify2DArray(this.cells, row, col, node)
+      this.board = this.modify2DArray(this.board, row, col, type)
     } else {
       const carNode = this.cells[row][col]
       this.carExitTimeInfoEl.innerText = carNode.exitTime
@@ -149,40 +174,26 @@ export default class ParkingLot {
 
   /**
    * Create HTML Img element
-   * @param {number} row
-   * @param {number} col
-   * @returns {Element} image element
+   * @param {Node} node
    */
-  createCarInRowCol(row, col, appendNode = false) {
+  createCarInRowCol(node) {
+    const { row, col, type } = node
     if (row === this.width - 1 && col === 0) {
       alert('Cannot place car on exit.')
       return
     }
 
-    let el = document.createElement('img'),
-      carType
+    const img = document.createElement('img')
+    img.src = SOURCES[type]
+    this.board = this.modify2DArray(this.board, row, col, type)
 
-    if (!this.isTargetPlaced) {
-      el.src = './images/red-car.png'
-      this.board = this.modify2DArray(this.board, row, col, 'T')
+    if (type === TYPES.TARGET_CAR) {
       this.isTargetPlaced = true
       this.startKey = `${row}x${col}`
       this.startPos = { row, col }
-      carType = TYPES.TARGET_CAR
-    } else {
-      this.board = this.modify2DArray(this.board, row, col, 'X')
-      el.src = './images/blue-car.png'
-
-      carType = TYPES.OTHER_CARS
     }
 
-    if (appendNode) {
-      const oldNode = this.cells[row][col]
-      const newNode = new Node(carType, oldNode.row, oldNode.col)
-      this.cells = this.modify2DArray(this.cells, row, col, newNode)
-    }
-
-    return el
+    this.getElementByRowCol(row, col).appendChild(img)
   }
 
   /**
@@ -192,14 +203,9 @@ export default class ParkingLot {
    * @param {number} col
    */
   removeCarEventListener(el, row, col) {
-    let car = this.board[row][col]
-    if (car === 'T') this.isTargetPlaced = false
-    this.board = this.modify2DArray(this.board, row, col, '')
-    el.children[0]?.remove()
-
-    const oldNode = this.cells[row][col]
-    const newNode = new Node(TYPES.OPEN_SPACE, oldNode.row, oldNode.col)
-    this.cells = this.modify2DArray(this.cells, row, col, newNode)
+    let carType = this.board[row][col]
+    if (carType === TYPES.TARGET_CAR) this.isTargetPlaced = false
+    el.innerHTML = ''
   }
 
   /**
@@ -284,24 +290,24 @@ export default class ParkingLot {
 
   /** Put random cars in random position */
   randomize() {
-    const numOfCars = parseInt(this.carNumberInput.value) || this.width - 1
+    const numOfCars =
+      parseInt(this.carNumberInput.value) || this.isPuzzle()
+        ? Math.pow(this.width, 2) - 1
+        : this.width
     const carKeys = []
 
+    // check inputted car number
     if (numOfCars > Math.pow(this.width, 2) - 1) {
       alert(`Maximum number of cars is : ${Math.pow(this.width, 2) - 1}`)
-      this.carNumberInput.value = this.width - 1
+      this.carNumberInput.value = Math.pow(this.width, 2) - 1
       return
     }
 
     // empty the boards
     this.resetArrays()
     this.isTargetPlaced = false
-    this.childEl.forEach((el) => {
-      if (el.children.length > 0) {
-        for (const child of el.children) {
-          child.remove() // delete all car images
-        }
-      }
+    this.childEl.forEach((child) => {
+      child.innerHTML = ''
     })
 
     // Generate random car positions
@@ -314,52 +320,155 @@ export default class ParkingLot {
       carKeys.push(key)
     }
 
+    // randomize target car position
+    const targetCarPos = Math.floor(Math.random() * carKeys.length)
+
+    // target car always top right corner
+    const targetCarInitialPos = [0, this.width - 1]
+
     /** @type {Array<Node>} */
-    let cars = []
+    let carsNode = []
     carKeys.forEach((key, i) => {
       const [row, col] = key.split('x').map(Number)
-      const id = i === 0 ? 'T' : 'X'
+      // const id = i === targetCarPos ? 'T' : 'X'
+      const id =
+        targetCarInitialPos[0] === row && targetCarInitialPos[1] === col
+          ? TYPES.TARGET_CAR
+          : TYPES.OTHER_CARS
       this.board = this.modify2DArray(this.board, row, col, id)
-      const node = new Node(id, row, col)
-      while (cars.find((n) => n.exitTime === node.exitTime)) {
+      const node = new Node(id, row, col) //
+      while (carsNode.find((n) => n.exitTime === node.exitTime)) {
         node.exitTime = node.assignExitTime()
       }
-      cars.push(node)
+      carsNode.push(node)
     })
 
     const randomizedCarsPosition = this.getRandomizedInitialStateTraditional(
-      cars.slice(0)
+      carsNode.slice(0)
     )
 
     randomizedCarsPosition.forEach((val, index) => {
-      const isCar = typeof val === 'number'
-      if (isCar) {
-        const car = cars.find((node) => node.exitTime === val)
-        const row = Math.floor(index / this.width)
-        const col = index % this.width
-        car.row = row
-        car.col = col
-        car.key = `${row}x${col}`
-        this.cells = this.modify2DArray(this.cells, row, col, car)
-      }
+      if (val === '_') return
+      const car = carsNode.find((node) => node.exitTime === val)
+      const row = Math.floor(index / this.width)
+      const col = index % this.width
+      car.row = row
+      car.col = col
+      car.key = `${row}x${col}`
+      this.cells = this.modify2DArray(this.cells, row, col, car)
     })
 
-    this.cells.forEach((rows, row) => {
-      rows.forEach((node, col) => {
+    this.cells.forEach((rows) => {
+      rows.forEach((node) => {
         // add car
         if (CARS.includes(node.type)) {
-          const el = this.getElementByRowCol(row, col)
-          const car = this.createCarInRowCol(row, col)
-          if (car) {
-            el.appendChild(car)
-          }
+          this.createCarInRowCol(node)
         }
       })
     })
 
-    console.log('initial', this.initialState)
-    console.log('cells', this.cells)
-    console.log('T', this.startPos)
+    // console.log('initial', this.initialState)
+    // console.log('cells', this.cells)
+    // console.log('T', this.startPos)
+  }
+
+  /**
+   * Find solution for traditional parking and returns shuffled array
+   * @param {Array<Node>} cars List of cars
+   * @returns {Array<string | number>} Shuffled array
+   */
+  getRandomizedInitialStateTraditional(cars) {
+    const width = this.width
+
+    // sort cars by exit time
+    const carsByExitTime = cars.sort((a, b) => {
+      if (a.exitTime < b.exitTime) return -1
+      else if (a.exitTime > b.exitTime) return 1
+      else return 0
+    })
+
+    let traditionalInitialState = this.create2dArray(width)
+    let puzzlePlaceGoal = traditionalInitialState.slice(0)
+    let puzzleExitGoal = traditionalInitialState.slice(0)
+    let otherCars = carsByExitTime.filter((n) => n.type === TYPES.OTHER_CARS)
+    const targetCar = carsByExitTime.find((n) => n.type === TYPES.TARGET_CAR)
+
+    /**
+     * Place state for puzzle
+     * [2, 5, 8]
+     * [1, 4, 7]
+     * [_, 3, 6]
+     *
+     * Retrieval state for puzzle
+     * [1, 4, 7]
+     * [_, 3, 6]
+     * [8, 2, 5]
+     */
+    const carsPuzzle = carsByExitTime.slice(0)
+    for (let col = width - 1; col >= 0; col--) {
+      for (let row = 0; row < width; row++) {
+        if (carsPuzzle.length > 0) {
+          const current = carsPuzzle.pop()
+          puzzlePlaceGoal = this.modify2DArray(
+            puzzlePlaceGoal,
+            row,
+            col,
+            current
+          )
+        }
+
+        // Retrieval state for puzzle
+        // Just place other cars for now
+        if (otherCars.length > 0) {
+          const current = otherCars.pop()
+          puzzleExitGoal = this.modify2DArray(puzzleExitGoal, row, col, current)
+        }
+      }
+    }
+
+    // Place target car in exit cell in puzzle system
+    puzzleExitGoal = this.modify2DArray(puzzleExitGoal, width - 1, 0, targetCar)
+
+    /**
+     * Traditional Placement State
+     * [2, a, 5]
+     * [1, b, 4]
+     * [_, c, 3]
+     */
+    for (let col = width - 1; col >= 0; col -= 2) {
+      for (let row = 0; row < width; row++) {
+        // don't place cars in bottom row except bottom right corner
+        if (col < width - 1 && row === width - 1) continue
+
+        // while there's car place it
+        if (carsByExitTime.length > 0) {
+          const current = carsByExitTime.pop()
+          traditionalInitialState[row][col] = current
+        } else {
+          break
+        }
+      }
+    }
+
+    // from board find find best place
+    const goalState = this.fill2dArray(traditionalInitialState, true)
+
+    this.traditionalPlaceState = goalState
+    this.puzzlePlaceState = this.fill2dArray(puzzlePlaceGoal, true)
+    this.puzzleExitGoalState = this.fill2dArray(puzzleExitGoal, true)
+
+    // shuffle
+    const randomizeState = this.shuffleState(goalState)
+    const randomizePuzzle = this.shuffleState(this.puzzlePlaceState)
+
+    const ret = {}
+    if (this.isPuzzle()) {
+      this.initialState = randomizePuzzle
+      return randomizePuzzle
+    } else {
+      this.initialState = randomizeState
+      return randomizeState
+    }
   }
 
   /**  Reset board, cells and cost into its default state based on width */
@@ -587,100 +696,6 @@ export default class ParkingLot {
     return ret
   }
 
-  /**
-   * Find solution for traditional parking and returns shuffled array
-   * @param {Array<Node>} cars List of cars
-   * @returns {Array<string | number>} Shuffled array
-   */
-  getRandomizedInitialStateTraditional(cars) {
-    // random place cars put in board
-    const carsByExitTime = cars.sort((a, b) => {
-      if (a.exitTime < b.exitTime) return -1
-      else if (a.exitTime > b.exitTime) return 1
-      else return 0
-    })
-
-    let traditionalInitialState = this.create2dArray(this.width)
-    let puzzlePlaceGoal = this.create2dArray(this.width)
-    let puzzleExitGoal = this.create2dArray(this.width)
-    let otherCars = carsByExitTime.filter((n) => n.type === TYPES.OTHER_CARS)
-    const targetCar = carsByExitTime.find((n) => n.type === TYPES.TARGET_CAR)
-
-    const width = this.width
-
-    const columnCars = []
-    let c = this.width - 1
-    while (c >= 0) {
-      columnCars.push(c)
-      c -= 2
-    }
-
-    // Goal state for puzzle
-    const carsPuzzle = carsByExitTime.slice(0)
-    for (let col = this.width - 1; col >= 0; col--) {
-      for (let row = 0; row < this.width; row++) {
-        if (carsPuzzle.length > 0) {
-          const current = carsPuzzle.pop()
-          puzzlePlaceGoal = this.modify2DArray(
-            puzzlePlaceGoal,
-            row,
-            col,
-            current
-          )
-        }
-
-        // Exit state for puzzle
-        if (otherCars.length > 0) {
-          const current = otherCars.pop()
-          puzzleExitGoal = this.modify2DArray(puzzleExitGoal, row, col, current)
-        }
-      }
-    }
-
-    // Place target car in exit cell in puzzle system
-    puzzleExitGoal = this.modify2DArray(
-      puzzleExitGoal,
-      this.width - 1,
-      0,
-      targetCar
-    )
-
-    // Place cars in target state of traditional state
-    for (let col = width - 1; col >= 0; col -= 2) {
-      for (let row = 0; row < width; row++) {
-        // don't place cars in bottom row except bottom right corner
-        if (col < width - 1 && row === width - 1) continue
-
-        // while there's car place it
-        if (carsByExitTime.length > 0) {
-          const current = carsByExitTime.pop()
-          traditionalInitialState[row][col] = current
-        } else {
-          break
-        }
-      }
-    }
-
-    // from board find find best place
-    const goalState = this.fill2dArray(traditionalInitialState, true)
-
-    this.traditionalPlaceState = goalState
-    this.puzzleExitGoalState = this.fill2dArray(puzzleExitGoal, true)
-    this.puzzlePlaceState = this.fill2dArray(puzzlePlaceGoal, true)
-
-    // shuffle
-    const randomizeState = this.shuffleState(goalState)
-    const randomizePuzzle = this.shuffleState(this.puzzlePlaceState)
-
-    if (this.isPuzzleSystem) {
-      this.initialState = randomizePuzzle
-      return randomizePuzzle
-    } else {
-      this.initialState = randomizeState
-      return randomizeState
-    }
-  }
-
   visualize(state, label = null) {
     let board = ''
     for (let i = 0; i < state.length; i += this.width) {
@@ -833,7 +848,7 @@ export default class ParkingLot {
 
     search({
       node: initialNode,
-      iterationLimit: 100000,
+      iterationLimit: 0,
       depthLimit: 0,
       callback: async (err, options) => {
         if (err) {
@@ -918,7 +933,10 @@ export default class ParkingLot {
                 console.log('All animation finished')
                 isAllAnimationEnded = true
                 await sleep(1)
-                this.resetCar(posInspector)
+                // this.resetCar(posInspector)
+
+                console.log('Start time', this.startTime)
+                console.log('Finish time', this.finishTime)
               }
             },
           })
@@ -931,15 +949,12 @@ export default class ParkingLot {
         }
       },
     })
-
-    console.log('Start time', this.startTime)
-    console.log('Finish time', this.finishTime)
   }
 
   /**
-   * @param {object} posInspector
+   * Change img element to their new position
    */
-  resetCar(posInspector) {
+  resetCar() {
     const initialBoard = this.initialState
     const finalBoard = this.isPuzzleSystem
       ? this.puzzlePlaceState
@@ -989,7 +1004,10 @@ export default class ParkingLot {
     })
   }
 
-  async solvePuzzle() {}
+  async solvePuzzle() {
+    console.log(this.initialState)
+    console.log(this.puzzleExitGoalState)
+  }
 
   shuffleState(initialState) {
     const states = {}

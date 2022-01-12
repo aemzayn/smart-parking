@@ -1,7 +1,7 @@
 const clockEl = document.querySelector('#clock')
 const speedText = document.getElementById('speed')
 
-const startBtn = document.getElementById('start-pause')
+const startBtn = document.getElementById('retrieve')
 const resetBtn = document.getElementById('reset')
 const speedBtns = document.querySelectorAll('button.speed')
 

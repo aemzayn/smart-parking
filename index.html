@@ -16,7 +16,7 @@
         <section id="time" class="time">
           <p>Time <span id="clock" class="clock">00:00</span></p>
           <div class="grid">
-            <button id="start-pause" class="start-pause">Start</button>
+            <button id="retrieve" class="start-pause">Retrieve</button>
             <button id="reset" class="reset" onclick="location.reload()">
               Reset
             </button>
@@ -46,10 +46,13 @@
         </section>
 
         <section id="system">
-          <p>System: <span class="system-info">Traditional</span></p>
-          <div class="grid">
+          <p>System: <span class="system-info">Puzzle</span></p>
+          <div class="grid system">
             <button id="system-btn" data-sys="traditional">Traditional</button>
             <button id="system-btn" data-sys="puzzle">Puzzle</button>
+            <button id="system-btn" data-sys="puzzle-retrieval">
+              Puzzle Retrieval
+            </button>
           </div>
         </section>
 
