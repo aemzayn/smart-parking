@@ -827,6 +827,11 @@ export default class ParkingLot {
     this.search(initialState, goalState)
   }
 
+  /**
+   * Solve the 8-puzzle
+   * @param {Array<number | string>} initialState
+   * @param {Array<number | string>} goalState
+   */
   async search(initialState, goalState) {
     const dim = this.width
     const game = new Game({
@@ -844,7 +849,7 @@ export default class ParkingLot {
     )
 
     console.log('Solving...')
-    this.startTime = new Date().toISOString()
+    this.startTime = performance.now()
 
     search({
       node: initialNode,
@@ -855,7 +860,8 @@ export default class ParkingLot {
           console.error(err)
           return
         }
-        this.finishTime = new Date().toISOString()
+        pause()
+        this.finishTime = performance.now()
 
         this.placeCarsBtn.disabled = false
         this.placeCarsBtn.innerText = 'Place'
@@ -935,8 +941,7 @@ export default class ParkingLot {
                 await sleep(1)
                 // this.resetCar(posInspector)
 
-                console.log('Start time', this.startTime)
-                console.log('Finish time', this.finishTime)
+                console.log('time consumed: ', this.finishTime - this.startTime)
               }
             },
           })
@@ -1007,6 +1012,7 @@ export default class ParkingLot {
   async solvePuzzle() {
     console.log(this.initialState)
     console.log(this.puzzleExitGoalState)
+    this.search(this.initialState, this.puzzleExitGoalState)
   }
 
   shuffleState(initialState) {
