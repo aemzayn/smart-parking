@@ -67,6 +67,9 @@ export default class ParkingLot {
     this.nodeInfoEl = document.getElementById('node-info')
     this.pathInfo = document.getElementById('path-info')
 
+    this.systemInfo.innerText =
+      window.localStorage.getItem('smart-parking-system') || 'Puzzle'
+
     /* ---- Place the cars nodes ---- */
     this.randomize()
 
@@ -453,6 +456,7 @@ export default class ParkingLot {
     // from board find find best place
     const goalState = this.fill2dArray(traditionalInitialState, true)
 
+    // goal states
     this.traditionalPlaceState = goalState
     this.puzzlePlaceState = this.fill2dArray(puzzlePlaceGoal, true)
     this.puzzleExitGoalState = this.fill2dArray(puzzleExitGoal, true)
@@ -460,15 +464,16 @@ export default class ParkingLot {
     // shuffle
     const randomizeState = this.shuffleState(goalState)
     const randomizePuzzle = this.shuffleState(this.puzzlePlaceState)
+    const randomizedExitPuzzle = this.shuffleState(this.puzzleExitGoalState)
 
-    const ret = {}
-    if (this.isPuzzle()) {
-      this.initialState = randomizePuzzle
-      return randomizePuzzle
-    } else {
-      this.initialState = randomizeState
-      return randomizeState
+    const ret = {
+      [SYS.puzzle]: randomizePuzzle,
+      [SYS.traditional]: randomizeState,
+      [SYS['puzzle-retrieval']]: randomizedExitPuzzle,
     }
+
+    this.initialState = ret[this.system]
+    return ret[this.system]
   }
 
   /**  Reset board, cells and cost into its default state based on width */
