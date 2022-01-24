@@ -338,7 +338,6 @@ export default class ParkingLot {
 
       targetPlaced = true
 
-      this.board = this.modify2DArray(this.board, row, col, id)
       const node = new Node(id, row, col) //
       while (carsNode.find((n) => n.exitTime === node.exitTime)) {
         node.exitTime = node.assignExitTime()
@@ -350,7 +349,7 @@ export default class ParkingLot {
       carsNode.slice(0)
     )
 
-    console.log(carsNode)
+    console.log(randomizedCarsPosition)
 
     randomizedCarsPosition.forEach((val, index) => {
       if (typeof val === 'string') return
@@ -360,6 +359,7 @@ export default class ParkingLot {
       car.row = row
       car.col = col
       car.key = `${row}x${col}`
+      this.board = this.modify2DArray(this.board, row, col, car.type)
       this.cells = this.modify2DArray(this.cells, row, col, car)
     })
 
@@ -371,10 +371,6 @@ export default class ParkingLot {
         }
       })
     })
-
-    // console.log('initial', this.initialState)
-    // console.log('cells', this.cells)
-    // console.log('T', this.startPos)
   }
 
   /**
