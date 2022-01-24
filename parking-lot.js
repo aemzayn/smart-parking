@@ -293,10 +293,16 @@ export default class ParkingLot {
 
   /** Put random cars in random position */
   randomize() {
-    const numOfCars =
-      parseInt(this.carNumberInput.value) || this.isPuzzle()
-        ? Math.pow(this.width, 2) - 1
-        : this.width
+    let inputNumber = parseInt(this.carNumberInput.value),
+      numOfCars
+    const isPuzzle = this.isPuzzle()
+
+    if (inputNumber) {
+      numOfCars = inputNumber
+    } else {
+      numOfCars = isPuzzle ? Math.pow(this.width, 2) - 1 : this.width
+    }
+
     const carKeys = []
 
     // check inputted car number
@@ -323,21 +329,15 @@ export default class ParkingLot {
       carKeys.push(key)
     }
 
-    // randomize target car position
-    const targetCarPos = Math.floor(Math.random() * carKeys.length)
-
-    // target car always top right corner
-    const targetCarInitialPos = [0, this.width - 1]
-
     /** @type {Array<Node>} */
-    let carsNode = []
+    let carsNode = [],
+      targetPlaced = false
     carKeys.forEach((key, i) => {
       const [row, col] = key.split('x').map(Number)
-      // const id = i === targetCarPos ? 'T' : 'X'
-      const id =
-        targetCarInitialPos[0] === row && targetCarInitialPos[1] === col
-          ? TYPES.TARGET_CAR
-          : TYPES.OTHER_CARS
+      const id = !targetPlaced ? TYPES.TARGET_CAR : TYPES.OTHER_CARS
+
+      targetPlaced = true
+
       this.board = this.modify2DArray(this.board, row, col, id)
       const node = new Node(id, row, col) //
       while (carsNode.find((n) => n.exitTime === node.exitTime)) {
@@ -350,8 +350,10 @@ export default class ParkingLot {
       carsNode.slice(0)
     )
 
+    console.log(carsNode)
+
     randomizedCarsPosition.forEach((val, index) => {
-      if (val === '_') return
+      if (typeof val === 'string') return
       const car = carsNode.find((node) => node.exitTime === val)
       const row = Math.floor(index / this.width)
       const col = index % this.width
